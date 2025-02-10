@@ -1,0 +1,55 @@
+"NodeType : "Modifier",
+"Name" : "public""NodeType : "Modifier",
+"Name" : "static""NodeType : "Modifier",
+"Name" : "private"{
+"NodeType :" : "Parameter",
+"Name" : "t", 
+"Modifiers": ["NodeType : "Modifier",
+"Name" : "public"{
+"NodeType :" : "Parameter",
+"Name" : "input", 
+"Modifiers": [{
+"NodeType" : "MethodDeclaration"
+"Name" : "calc",
+"ReturnType": 
+"Modifiers": [{ "NodeType : "Modifier",
+"Name" : "public"}, ],
+"Parameters" : [{
+"NodeType :" : "Parameter",
+"Name" : "input", 
+"Modifiers": [],
+{
+"NodeType :" : "Parameter",
+"Name" : "t", 
+"Modifiers": ["NodeType : "Modifier",
+"Name" : "public"{
+"NodeType" : "MethodDeclaration"
+"Name" : "memoryRecall",
+"ReturnType": 
+"Modifiers": [{ "NodeType : "Modifier",
+"Name" : "public"}, ],
+"Parameters" : [],
+"NodeType : "Modifier",
+"Name" : "public"{
+"NodeType" : "MethodDeclaration"
+"Name" : "memoryClear",
+"ReturnType": 
+"Modifiers": [{ "NodeType : "Modifier",
+"Name" : "public"}, ],
+"Parameters" : [],
+"NodeType : "Modifier",
+"Name" : "public"{
+"NodeType :" : "Parameter",
+"Name" : "value", 
+"Modifiers": [{
+"NodeType" : "MethodDeclaration"
+"Name" : "memoryStore",
+"ReturnType": 
+"Modifiers": [{ "NodeType : "Modifier",
+"Name" : "public"}, ],
+"Parameters" : [{
+"NodeType :" : "Parameter",
+"Name" : "value", 
+"Modifiers": [],
+"NodeType : "Modifier",
+"Name" : "public"
