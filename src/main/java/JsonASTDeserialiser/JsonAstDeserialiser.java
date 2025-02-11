@@ -1,26 +1,24 @@
 package JsonASTDeserialiser;
 
-import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ContainerNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
-import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.Parameter;
+import com.github.javaparser.ast.expr.ArrayAccessExpr;
+import com.github.javaparser.ast.expr.AssignExpr;
+import com.github.javaparser.ast.expr.BinaryExpr;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.visitor.GenericVisitorAdapter;
-import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.List;
+import java.lang.classfile.Signature;
 
 public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode> {
     private ObjectMapper objectMapper = new ObjectMapper();
@@ -117,6 +115,36 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
         n.getMethods().forEach(m -> methods.add(visit(m,null)));
         return classOrInterfDecl;
     }
+
+    @Override
+    public JsonNode visit(ArrayAccessExpr n, JsonNode arg) {
+         ObjectNode jsonArrAccExpr = objectMapper.createObjectNode();
+         jsonArrAccExpr.put("type_node","ArrayAccesExpression");
+         n.getName().ifNameExpr( e -> jsonArrAccExpr.put("name",e.asNameExpr().toString()));
+         jsonArrAccExpr.put("index",n.getIndex().asIntegerLiteralExpr().asNameExpr().toString());
+         return jsonArrAccExpr;
+    }
+
+    @Override
+    public JsonNode visit(AssignExpr n, JsonNode arg) {
+        ObjectNode assignExprJson = objectMapper.createObjectNode();
+        assignExprJson.put("type_node","AssignExpression");
+        assignExprJson.put("operator",n.getOperator().asString());
+        assignExprJson.put("left_side",n.getTarget().accept(this,null));
+        assignExprJson.put("right_side",n.getValue().accept(this,null));
+        return assignExprJson;
+    }
+
+    @Override
+    public JsonNode visit(BinaryExpr n, JsonNode arg) {
+        ObjectNode binaryExprJson = objectMapper.createObjectNode();
+        binaryExprJson.put("node_type","BinaryExpr");
+        binaryExprJson.put("operator",n.getOperator().asString());
+        binaryExprJson.put("left_operand",n.getLeft().accept(this,null));
+        binaryExprJson.put("right_operand",n.getRight().accept(this,null));
+        return binaryExprJson;
+    }
+
     public String convertToJson(final Node node){
         JsonNode jsonRepresentation = node.accept(this,null);
 
