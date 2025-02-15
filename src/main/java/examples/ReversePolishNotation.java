@@ -1,12 +1,20 @@
 package examples;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Stack;
 import java.util.stream.Stream;
 
 public class ReversePolishNotation {
-    public static int ONE_BILLION=1000000000;
-    private double memory=0;
+    public static int ONE_BILLION=1000000000,e;
+    private double memory;
     //ahoj jasom komentar
+    List<Integer> numbers= new ArrayList<>(Arrays.asList(1,2,3,4));
+    public void lambdaExample(){
+        numbers.forEach(num -> System.out.println(num));
+        this.calc("10 12 +");
+    }
     public Double calc(String input){
         String[] tokens = input.split(" ");
         Stack<Double> numbers = new Stack<>();

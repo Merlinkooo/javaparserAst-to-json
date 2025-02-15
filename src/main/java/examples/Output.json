@@ -1,55 +1,169 @@
-"NodeType : "Modifier",
-"Name" : "public""NodeType : "Modifier",
-"Name" : "static""NodeType : "Modifier",
-"Name" : "private"{
-"NodeType :" : "Parameter",
-"Name" : "t", 
-"Modifiers": ["NodeType : "Modifier",
-"Name" : "public"{
-"NodeType :" : "Parameter",
-"Name" : "input", 
-"Modifiers": [{
-"NodeType" : "MethodDeclaration"
-"Name" : "calc",
-"ReturnType": 
-"Modifiers": [{ "NodeType : "Modifier",
-"Name" : "public"}, ],
-"Parameters" : [{
-"NodeType :" : "Parameter",
-"Name" : "input", 
-"Modifiers": [],
 {
-"NodeType :" : "Parameter",
-"Name" : "t", 
-"Modifiers": ["NodeType : "Modifier",
-"Name" : "public"{
-"NodeType" : "MethodDeclaration"
-"Name" : "memoryRecall",
-"ReturnType": 
-"Modifiers": [{ "NodeType : "Modifier",
-"Name" : "public"}, ],
-"Parameters" : [],
-"NodeType : "Modifier",
-"Name" : "public"{
-"NodeType" : "MethodDeclaration"
-"Name" : "memoryClear",
-"ReturnType": 
-"Modifiers": [{ "NodeType : "Modifier",
-"Name" : "public"}, ],
-"Parameters" : [],
-"NodeType : "Modifier",
-"Name" : "public"{
-"NodeType :" : "Parameter",
-"Name" : "value", 
-"Modifiers": [{
-"NodeType" : "MethodDeclaration"
-"Name" : "memoryStore",
-"ReturnType": 
-"Modifiers": [{ "NodeType : "Modifier",
-"Name" : "public"}, ],
-"Parameters" : [{
-"NodeType :" : "Parameter",
-"Name" : "value", 
-"Modifiers": [],
-"NodeType : "Modifier",
-"Name" : "public"
+  "node_type" : "ClassOrInterfaceDeclaration",
+  "modifiers" : [ "public " ],
+  "fieldDeclarations" : [ {
+    "node_type" : "FieldDeaclaration",
+    "variable_declarations" : [ {
+      "variable_name" : "ONE_BILLION",
+      "initial_value" : {
+        "type" : "IntLitExpr",
+        "value" : "1000000000"
+      },
+      "type" : "int"
+    }, {
+      "variable_name" : "e",
+      "initial_value" : "",
+      "type" : "int"
+    } ],
+    "modifiers" : [ "public ", "static " ]
+  }, {
+    "node_type" : "FieldDeaclaration",
+    "variable_declarations" : [ {
+      "variable_name" : "memory",
+      "initial_value" : "",
+      "type" : "double"
+    } ],
+    "modifiers" : [ "private " ]
+  }, {
+    "node_type" : "FieldDeaclaration",
+    "variable_declarations" : [ {
+      "variable_name" : "numbers",
+      "initial_value" : {
+        "node_type" : "MethodCallExpr",
+        "name" : "asList",
+        "owner" : "Arrays",
+        "arguments" : [ {
+          "type" : "IntLitExpr",
+          "value" : "1"
+        }, {
+          "type" : "IntLitExpr",
+          "value" : "2"
+        }, {
+          "type" : "IntLitExpr",
+          "value" : "3"
+        }, {
+          "type" : "IntLitExpr",
+          "value" : "4"
+        } ]
+      },
+      "type" : "List<Integer>"
+    } ],
+    "modifiers" : [ ]
+  } ],
+  "methods" : [ {
+    "node_type" : "MethodDeclaration",
+    "name" : "lambdaExample",
+    "return_type" : "void",
+    "modifiers" : [ "public " ],
+    "body" : {
+      "type" : "CompoundStmt",
+      "statements" : [ {
+        "node_type" : "MethodCallExpr",
+        "name" : "forEach",
+        "owner" : "numbers",
+        "arguments" : [ {
+          "type" : "LambdaExpr",
+          "params" : [ {
+            "name" : "num",
+            "type" : "",
+            "initialiser" : null
+          } ],
+          "body" : {
+            "node_type" : "MethodCallExpr",
+            "name" : "println",
+            "owner" : "System",
+            "arguments" : [ "num" ]
+          }
+        } ]
+      }, {
+        "node_type" : "MethodCallExpr",
+        "name" : "calc",
+        "owner" : {
+          "type" : "ThisExpr"
+        },
+        "arguments" : [ {
+          "type" : "StringLiteralExpr",
+          "value" : "10 12 +"
+        } ]
+      } ]
+    }
+  }, {
+    "node_type" : "MethodDeclaration",
+    "name" : "calc",
+    "return_type" : "Double",
+    "modifiers" : [ "public " ],
+    "body" : {
+      "type" : "CompoundStmt",
+      "statements" : [ null, null, {
+        "node_type" : "MethodCallExpr",
+        "name" : "forEach",
+        "owner" : {
+          "node_type" : "MethodCallExpr",
+          "name" : "of",
+          "owner" : "Stream",
+          "arguments" : [ "tokens" ]
+        },
+        "arguments" : [ {
+          "type" : "LambdaExpr",
+          "params" : [ {
+            "name" : "t",
+            "type" : "",
+            "initialiser" : null
+          } ],
+          "body" : {
+            "type" : "CompoundStmt",
+            "statements" : [ null, null, {
+              "type" : "SwitchStatement",
+              "entry" : "t"
+            } ]
+          }
+        } ]
+      }, {
+        "node_type" : "MethodCallExpr",
+        "name" : "pop",
+        "owner" : "numbers",
+        "arguments" : [ ]
+      } ]
+    }
+  }, {
+    "node_type" : "MethodDeclaration",
+    "name" : "memoryRecall",
+    "return_type" : null,
+    "modifiers" : [ "public " ],
+    "body" : {
+      "type" : "CompoundStmt",
+      "statements" : [ "memory" ]
+    }
+  }, {
+    "node_type" : "MethodDeclaration",
+    "name" : "memoryClear",
+    "return_type" : "void",
+    "modifiers" : [ "public " ],
+    "body" : {
+      "type" : "CompoundStmt",
+      "statements" : [ {
+        "type_node" : "AssignExpression",
+        "operator" : "=",
+        "left_side" : "memory",
+        "right_side" : {
+          "type" : "IntLitExpr",
+          "value" : "0"
+        }
+      } ]
+    }
+  }, {
+    "node_type" : "MethodDeclaration",
+    "name" : "memoryStore",
+    "return_type" : "void",
+    "modifiers" : [ "public " ],
+    "body" : {
+      "type" : "CompoundStmt",
+      "statements" : [ {
+        "type_node" : "AssignExpression",
+        "operator" : "=",
+        "left_side" : "memory",
+        "right_side" : "value"
+      } ]
+    }
+  } ]
+}
