@@ -32,7 +32,7 @@
 build/
 !**/src/main/**/build/
 !**/src/test/**/build/
-
+*.json
 ### VS Code ###
 .vscode/
 
