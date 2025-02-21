@@ -27,11 +27,11 @@ public class Reference {
     }
 
     public enum ReferenceType{
-        PARAM_REFERENCE("ParamVarReference"),
-        LOCAL_VAR_REFERENCE("LocalVarReference"),
-        MEMBER_VAR_REFERENCE("MemberVarReference"),
-        THIS_REFERENCE("ThisReference"),
-        CLASS_REFERENCE("ClassReference");
+        PARAM_REFERENCE("ParamVarReferenceExpr"),
+        LOCAL_VAR_REFERENCE("LocalVarReferenceExpr"),
+        MEMBER_VAR_REFERENCE("MemberVarReferenceExpr"),
+        THIS_REFERENCE("ThisReferenceExpr"),
+        CLASS_REFERENCE("ClassReferenceExpr");
         private String name;
         ReferenceType(String name){
             this.name = name;

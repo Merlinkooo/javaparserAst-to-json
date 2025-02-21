@@ -20,8 +20,9 @@ import com.github.javaparser.symbolsolver.resolution.typesolvers.ReflectionTypeS
 import java.io.*;
 
 public class Test {
-
+    private static int cislo=10;
     public static void main(String[] args) throws IOException {
+
         /*
         CombinedTypeSolver typeSolver = new CombinedTypeSolver();
         typeSolver.add(new ReflectionTypeSolver()); // Použije reflexiu pre bežné Java triedy

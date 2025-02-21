@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Stack;
 import java.util.stream.Stream;
 
-public class ReversePolishNotation {
+public class ReversePolishNotation<T extends Number> {
     public static int ONE_BILLION=1000000000,e;
     private double memory;
 

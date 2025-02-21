@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.node.*;
+import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.*;
@@ -228,6 +229,18 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
     }
 
     @Override
+    public JsonNode visit(TypeParameter n, JsonNode arg) {
+        ObjectNode genParamJson = this.objectMapper.createObjectNode();
+        genParamJson.put("node","GenericParam");
+        genParamJson.put("name",n.getName().toString());
+        genParamJson.put("constraint",n.getTypeBound().isEmpty() ?
+                null : n.getTypeBound().get(0).asString());
+
+
+        return genParamJson;
+    }
+
+    @Override
     public JsonNode visit(DoStmt n, JsonNode arg) {
         ObjectNode doStmtJson = this.objectMapper.createObjectNode();
         doStmtJson.put("node","DoWhileStmt");
@@ -237,6 +250,27 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
         doStmtJson.put("body",n.getBody().accept(this,null));
         return doStmtJson;
 
+    }
+
+    @Override
+    public JsonNode visit(CompilationUnit n, JsonNode arg) {
+        ObjectNode compUnitJson = this.objectMapper.createObjectNode();
+        compUnitJson.put("node","TranslationUnit");
+        ArrayNode classes = this.objectMapper.createArrayNode();
+        compUnitJson.put("classes",classes);
+        //we are only interested in ClassOrInterfaceDeclarations
+        n.getChildNodes().forEach( node ->
+                {
+                    if(node instanceof ClassOrInterfaceDeclaration){
+                        ClassOrInterfaceDeclaration classNode = (ClassOrInterfaceDeclaration)node;
+                        classes.add(this.visit(classNode,null));
+                    }
+                }
+        );
+
+        compUnitJson.put("functions",this.objectMapper.createArrayNode());
+        compUnitJson.put("globals",this.objectMapper.createArrayNode());
+        return compUnitJson;
     }
 
     @Override
@@ -462,12 +496,8 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
         classOrInterfDeclJson.put("generic_parameters",generic_params);
 
         n.getTypeParameters().forEach(gen_param -> {
-            ObjectNode genParamJson = this.objectMapper.createObjectNode();
-            genParamJson.put("node","GenericParam");
-            genParamJson.put("name",gen_param.getName().toString());
-            genParamJson.put("constraint",gen_param.getTypeBound().isEmpty() ?
-                    null : gen_param.getTypeBound().get(0).asString());
-            generic_params.add(genParamJson);
+
+            generic_params.add(this.visit(gen_param,null));
         });
         return classOrInterfDeclJson;
     }
