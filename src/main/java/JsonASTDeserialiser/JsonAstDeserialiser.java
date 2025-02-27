@@ -207,7 +207,8 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
             if (stmt.isPresent()){
                 switchEntryJson.put("body",stmt.get().accept(this,null));
             }else {
-                switchEntryJson.put("body",this.objectMapper.createObjectNode());
+                //? what if case is empty,it makes no sense te create empty case,but this code can be compiled
+                switchEntryJson.put("body",this.objectMapper.createObjectNode().put("node","CompoundStmt"));
             }
 
         }
@@ -308,9 +309,64 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
     }
 
     @Override
+    public JsonNode visit(SuperExpr n, JsonNode arg) {
+        return super.visit(n, arg);
+    }
+
+    @Override
+    public JsonNode visit(ExplicitConstructorInvocationStmt n, JsonNode arg) {
+        ObjectNode baseInitStmtJson = this.objectMapper.createObjectNode();
+        baseInitStmtJson.put("node","BaseInitializerStmt");
+
+        //need to find out if there is anncestor ClassOrInterfaceDeclaration,because we want name of class itself
+        //or name of anncestor of the class,we consider only theese options in ASTFRI
+        Optional<ClassOrInterfaceDeclaration> anncestor = n.findAncestor(ClassOrInterfaceDeclaration.class);
+
+        if (anncestor.isPresent()) {
+            ClassOrInterfaceDeclaration classDec = anncestor.get();
+            //check if constructor was called with this
+            if (n.isThis()) {
+                baseInitStmtJson.put("base",classDec.getNameAsString());
+            //or it is with super,we dont consider any other option
+            }else{
+                baseInitStmtJson.put("base", classDec.getExtendedTypes().get(0).getNameAsString());
+            }
+
+        }
+
+
+        ArrayNode arguments = this.objectMapper.createArrayNode();
+        baseInitStmtJson.put("arguments",arguments);
+
+        n.getArguments().forEach(argument -> arguments.add(argument.accept(this,null)));
+
+        return baseInitStmtJson;
+    }
+
+    @Override
     public JsonNode visit(ConstructorDeclaration n, JsonNode arg) {
-        //TODO
-        return null;
+
+        ObjectNode constructorDefStmtJson = this.objectMapper.createObjectNode();
+        constructorDefStmtJson.put("node","ConstructorDefStmt");
+        constructorDefStmtJson.put("owner", n.getName().asString());
+
+        ArrayNode params = this.objectMapper.createArrayNode();
+        constructorDefStmtJson.put("parameters",params);
+
+        n.getParameters().forEach(param -> params.add(this.visit(param,null)));
+        //Need to check in body if there are some ExplicitConstructorInvocationStmt,because they cant be part of
+        //body but we need them as separated statemets-see BaseInitializerStmt in ASTFRI
+        ArrayNode baseInitializers = this.objectMapper.createArrayNode();
+        constructorDefStmtJson.put("base_initializers",baseInitializers);
+        n.getBody().getStatements().forEach(stmt -> {
+            if (stmt instanceof ExplicitConstructorInvocationStmt)
+                baseInitializers.add(stmt.accept(this,null));
+
+        });
+
+        constructorDefStmtJson.put("body",this.visit(n.getBody(),null));
+
+        return constructorDefStmtJson;
     }
 
     @Override

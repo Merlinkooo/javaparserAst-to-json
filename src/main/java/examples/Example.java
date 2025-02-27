@@ -5,6 +5,13 @@ public class Example<T extends Number> {
 
     private String  text3;
     private ReversePolishNotation<Integer> notation= new ReversePolishNotation<>();
+
+    public Example(String text){
+        this.text = text;
+    }
+    public Example(){
+        this("test");
+    }
     public void test(String param) {
         String text = "Local";
         text.length();
@@ -15,6 +22,7 @@ public class Example<T extends Number> {
             case "priezvisko","meno":{
 
             }
+            case "text" :
 
         }
 
