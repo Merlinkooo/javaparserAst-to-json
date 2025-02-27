@@ -399,7 +399,7 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
     @Override
     public JsonNode visit(BlockStmt n, JsonNode arg) {
         ObjectNode blockStatementJson = objectMapper.createObjectNode();
-        blockStatementJson.put("type","CompoundStmt");
+        blockStatementJson.put("node","CompoundStmt");
         ArrayNode statements = objectMapper.createArrayNode();
         blockStatementJson.put("statements",statements);
         this.lasBlockStmtJson = lasBlockStmtJson;
@@ -414,10 +414,14 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
                     VariableDeclarationExpr declarationExpr = (VariableDeclarationExpr) expressionStmt.getExpression();
                      this.createVarDefStmts(declarationExpr,"Local").forEach(localVar -> statements.add(localVar));
                 }else{
+                    //check for ExplicitConstructorInvocationStmt ,we dont want to this node to be visited here
+                    if (!(statement instanceof ExplicitConstructorInvocationStmt))
                     statements.add(statement.accept(this,statements));
                 }
 
             } else{
+                //check for ExplicitConstructorInvocationStmt ,we dont want to this node to be visited here
+                if (!(statement instanceof ExplicitConstructorInvocationStmt))
                 statements.add(statement.accept(this,statements));
             }
 
