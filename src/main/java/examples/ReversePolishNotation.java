@@ -9,7 +9,11 @@ import java.util.stream.Stream;
 public class ReversePolishNotation<T extends Number> {
     public static int ONE_BILLION=1000000000,e;
     private double memory;
+    private String meno;
 
+    public boolean getBool(){
+        return true;
+    }
     public Double calc(String input){
         String[] tokens = input.split(" ");
         Stack<Double> numbers = new Stack<>();

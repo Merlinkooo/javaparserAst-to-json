@@ -4,6 +4,8 @@ import JsonASTDeserialiser.JsonAstDeserialiser;
 import JsonASTDeserialiser.ReferenceTypeResolver;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.github.javaparser.JavaParser;
+import com.github.javaparser.ParserConfiguration;
 import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.expr.Expression;
@@ -32,8 +34,12 @@ public class Test {
         JavaSymbolSolver symbolSolver = new JavaSymbolSolver(typeSolver);
         StaticJavaParser.getConfiguration().setSymbolResolver(symbolSolver);*/
         //JsonAstDeserialiser visitor = new JsonAstDeserialiser("src/main/java/examples/ReversePolishNotation.java");
-        File file = new File("src/main/java/examples/ReversePolishNotation.java");
-        CompilationUnit cu = StaticJavaParser.parse(file);
+        File file = new File("src/main/java/examples/Example.java");
+        ParserConfiguration conf = new ParserConfiguration();
+        conf.setLanguageLevel(ParserConfiguration.LanguageLevel.JAVA_17);
+        JavaParser javaParser = new JavaParser(conf);
+
+        CompilationUnit cu = javaParser.parse(file).getResult().get();
         JsonAstDeserialiser deserialiser = new JsonAstDeserialiser(file);
 
         try(FileWriter fileWriter = new FileWriter(new File("src/main/java/examples/Output.json"))) {

@@ -21,17 +21,17 @@ public class Reference {
     }
     public ObjectNode toJson(){
         ObjectNode node =  objectMapper.createObjectNode();
-        node.put("type",this.type.getName());
+        node.put("node",this.type.getName());
         node.put("name",this.nameOfReferencedEntity);
         return node;
     }
 
     public enum ReferenceType{
-        PARAM_REFERENCE("ParamVarReferenceExpr"),
-        LOCAL_VAR_REFERENCE("LocalVarReferenceExpr"),
-        MEMBER_VAR_REFERENCE("MemberVarReferenceExpr"),
-        THIS_REFERENCE("ThisReferenceExpr"),
-        CLASS_REFERENCE("ClassReferenceExpr");
+        PARAM_REFERENCE("ParamVarRefExpr"),
+        LOCAL_VAR_REFERENCE("LocalVarRefExpr"),
+        MEMBER_VAR_REFERENCE("MemberVarRefExpr"),
+        THIS_REFERENCE("ThisRefExpr"),
+        CLASS_REFERENCE("ClassRefExpr");
         private String name;
         ReferenceType(String name){
             this.name = name;

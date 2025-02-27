@@ -2,9 +2,9 @@ package examples;
 
 public class Example<T extends Number> {
     private String text = "Hello";
-    private static String text2="afa";
-    private T number;
-    String  text3="";
+
+    private String  text3;
+    private ReversePolishNotation<Integer> notation= new ReversePolishNotation<>();
     public void test(String param) {
         String text = "Local";
         text.length();

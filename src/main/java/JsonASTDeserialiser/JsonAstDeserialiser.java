@@ -16,6 +16,7 @@ import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.expr.*;
+import com.github.javaparser.ast.nodeTypes.NodeWithVariables;
 import com.github.javaparser.ast.stmt.*;
 import com.github.javaparser.ast.type.*;
 import com.github.javaparser.ast.visitor.GenericVisitorAdapter;
@@ -120,12 +121,12 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
 
     @Override
     public JsonNode visit(UnknownType n, JsonNode arg) {
-        return new TextNode("Unknown");
+        return this.objectMapper.createObjectNode().put("node","UnknownType");
     }
 
     @Override
     public JsonNode visit(VoidType n, JsonNode arg) {
-        return new TextNode("Void");
+        return this.objectMapper.createObjectNode().put("node","VoidType");
     }
 
     //We are only interested in access modifiers in this stage
@@ -195,7 +196,7 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
                     //creating LocalVarDefStmt
                     if (expressionStmt.getExpression() instanceof VariableDeclarationExpr) {
                         VariableDeclarationExpr declarationExpr = (VariableDeclarationExpr) expressionStmt.getExpression();
-                        this.createVarDefStmts(declarationExpr).forEach(localVar -> statements.add(localVar));
+                        this.createVarDefStmts(declarationExpr,"Local").forEach(localVar -> statements.add(localVar));
                     } else {
                         statements.add(statement.accept(this, statements));
                     }
@@ -316,10 +317,30 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
     }
 
     @Override
+    public JsonNode visit(TryStmt n, JsonNode arg) {
+        return super.visit(n, arg);
+
+    }
+
+    // Equivalent for NewExpr in ASTFri
+    @Override
     public JsonNode visit(ObjectCreationExpr n, JsonNode arg) {
-        ObjectNode constrCallExprJson = this.objectMapper.createObjectNode();
-        constrCallExprJson.put("node","ConstructorCallExpr");
-        return constrCallExprJson;
+        //This node is created,because in ASTFRI ,there is NewExpr which is parent Node for ConstructorCallExpr
+        ObjectNode newExprJson = this.objectMapper.createObjectNode();
+        newExprJson.put("node","NewExpr");
+
+        //Object representing ConstructorCallExpr
+        ObjectNode constructorCallExprJson = this.objectMapper.createObjectNode();
+        constructorCallExprJson.put("node","ConstructorCallExpr" );
+        constructorCallExprJson.put("type",this.visit(n.getType(),null));
+
+        ArrayNode arguments = this.objectMapper.createArrayNode();
+        constructorCallExprJson.put("arguments",arguments);
+        n.getArguments().forEach(argument -> arguments.add(argument.accept(this,null)));
+
+        newExprJson.put("init",constructorCallExprJson);
+
+        return newExprJson;
     }
 
     @Override
@@ -338,7 +359,7 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
                 //creating LocalVarDefStmt
                 if(expressionStmt.getExpression() instanceof VariableDeclarationExpr){
                     VariableDeclarationExpr declarationExpr = (VariableDeclarationExpr) expressionStmt.getExpression();
-                     this.createVarDefStmts(declarationExpr).forEach(localVar -> statements.add(localVar));
+                     this.createVarDefStmts(declarationExpr,"Local").forEach(localVar -> statements.add(localVar));
                 }else{
                     statements.add(statement.accept(this,statements));
                 }
@@ -409,9 +430,7 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
         varDefStmtJson.put("type", n.getType().accept(this,null));
         var initialzer = n.getInitializer();
         if(initialzer.isPresent()) {
-            varDefStmtJson.put("initialzer",this.visit(initialzer.get()));
-        }else {
-            varDefStmtJson.put("initializer", NullNode.getInstance());
+            varDefStmtJson.put("initialzer", this.visit(initialzer.get()));
         }
 
         return arg;
@@ -423,15 +442,15 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
     public JsonNode visit(PrimitiveType n, JsonNode arg) {
 
         switch (n.getType()){
-            case INT -> {return  new TextNode("Int");}
-            case BYTE -> {return new TextNode("Int");}
-            case SHORT -> {return new TextNode("Int");}
-            case LONG ->  {return new TextNode("Int");}
-            case CHAR -> {return new TextNode("Char");}
-            case FLOAT -> {return new TextNode("Float");}
-            case DOUBLE -> {return new TextNode("Float");}
-            case BOOLEAN ->  {return new TextNode("Bool");}
-            default ->  {return new TextNode("Unknown");}
+            case INT -> {return  this.objectMapper.createObjectNode().put("node","IntType");}
+            case BYTE -> {return this.objectMapper.createObjectNode().put("node","IntType");}
+            case SHORT -> {return this.objectMapper.createObjectNode().put("node","IntType");}
+            case LONG ->  {return this.objectMapper.createObjectNode().put("node","IntType");}
+            case CHAR -> {return this.objectMapper.createObjectNode().put("node","CharType");}
+            case FLOAT -> {return this.objectMapper.createObjectNode().put("node","FloatType");}
+            case DOUBLE -> {return this.objectMapper.createObjectNode().put("node","FloatType");}
+            case BOOLEAN -> {return  this.objectMapper.createObjectNode().put("node","BoolType");}
+            default -> {return this.objectMapper.createObjectNode().put("node","UnknownType");}
         }
     }
     /*
@@ -451,12 +470,29 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
         return parameterNodeJson;
 
     }
-
+    //Class or Interface types are represented in ASTFRI as IndirectionType,so as a result we want
+    //IndirectionType , which is pointing to ClassOrInterface type
+    // with one exception,and that is when this ClassType is used in context of ObjecCreationExpr-in this case
+    //we want this type to be represented as UserType,to recognise this context we check if parent node
+    //is ObjectCreationExpr,and depending on result of this check we apply different logic
     @Override
     public JsonNode visit(ClassOrInterfaceType n, JsonNode arg) {
+        ObjectNode classTypeJson = this.objectMapper.createObjectNode();
+        if(n.getParentNode().isPresent() && n.getParentNode().get() instanceof ObjectCreationExpr) {
 
-        return new TextNode("UserType");
+            classTypeJson.put("node", "UserType");
+            classTypeJson.put("name", n.getNameAsString());
 
+        }else {
+
+            classTypeJson.put("node", "IndirectionType");
+
+            ObjectNode inderectTypeJson = this.objectMapper.createObjectNode();
+            inderectTypeJson.put("node", "UserType");
+            inderectTypeJson.put("name", n.getNameAsString());
+            classTypeJson.put("indirect", inderectTypeJson);
+        }
+        return classTypeJson;
     }
 
     @Override
@@ -474,14 +510,11 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
         ArrayNode attributes = objectMapper.createArrayNode();
         classOrInterfDeclJson.put("atrributes",attributes);
         n.getFields().forEach(field -> {
-            field.getVariables().forEach(variable ->{
-                    ObjectNode memberDefStmtJson = this.objectMapper.createObjectNode(); //this.visit(variable,null);
-                    memberDefStmtJson.put("node","MemberVarDefStmt");
+            this.createVarDefStmts(field,"Member").forEach(var ->{
+                //We are only interested in access modifiers and we assume that access mod is first
+                var.put("acces",this.visit(field.getModifiers().get(0),null));
+                attributes.add(var);
 
-                    //We are only interested in access modifiers and we assume that access mod is first
-                    memberDefStmtJson.put("acces",this.visit(field.getModifiers().get(0),null));
-                    this.visit(variable,memberDefStmtJson);
-                    attributes.add(memberDefStmtJson);
             });
 
         });
@@ -562,7 +595,10 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
     @Override
     public JsonNode visit(ConditionalExpr n, JsonNode arg) {
         ObjectNode condExprJson = this.objectMapper.createObjectNode();
-        condExprJson.put("node","ConditionalExpr");
+        condExprJson.put("node","IfExpr");
+
+        Expression cond = n.getCondition();
+        condExprJson.put("condition",cond.accept(this,null));
         Expression then = n.getThenExpr();
         condExprJson.put("ifTrue",this.visit(then));
 
@@ -589,7 +625,7 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
     @Override
     public JsonNode visit(BooleanLiteralExpr n, JsonNode arg) {
         ObjectNode booleanLitExprJson = objectMapper.createObjectNode();
-        booleanLitExprJson.put("type","BoolLitExpr");
+        booleanLitExprJson.put("node","BoolLitExpr");
         booleanLitExprJson.put("value",n.getValue());
         return booleanLitExprJson;
     }
@@ -597,16 +633,16 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
     @Override
     public JsonNode visit(DoubleLiteralExpr n, JsonNode arg) {
         ObjectNode doubleLitExprJson = objectMapper.createObjectNode();
-        doubleLitExprJson.put("type","FloatLitExpr");
-        doubleLitExprJson.put("value",n.getValue());
+        doubleLitExprJson.put("node","FloatLitExpr");
+        doubleLitExprJson.put("value",Double.parseDouble(n.getValue()));
         return doubleLitExprJson;
     }
 
     @Override
     public JsonNode visit(IntegerLiteralExpr n, JsonNode arg) {
         ObjectNode intLitExprJson = objectMapper.createObjectNode();
-        intLitExprJson.put("type","IntLitExpr");
-        intLitExprJson.put("value",n.getValue());
+        intLitExprJson.put("node","IntLitExpr");
+        intLitExprJson.put("value",Integer.parseInt(n.getValue()));
         return intLitExprJson;
     }
 
@@ -614,22 +650,22 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
     public JsonNode visit(LongLiteralExpr n, JsonNode arg) {
         //return this.createJsonLiteralExpr("LongLiteralExpr",n.getValue());
         ObjectNode intLitExprJson = objectMapper.createObjectNode();
-        intLitExprJson.put("type","IntLitExpr");
-        intLitExprJson.put("value",n.getValue());
+        intLitExprJson.put("node","IntLitExpr");
+        intLitExprJson.put("value",Integer.parseInt(n.getValue()));
         return intLitExprJson;
     }
 
     @Override
     public JsonNode visit(NullLiteralExpr n, JsonNode arg) {
         ObjectNode nullLitExprJson = objectMapper.createObjectNode();
-        nullLitExprJson.put("type","NullLitExpr");
+        nullLitExprJson.put("node","NullLitExpr");
         return nullLitExprJson;
     }
 
     @Override
     public JsonNode visit(StringLiteralExpr n, JsonNode arg) {
         ObjectNode stringLitExprJson = objectMapper.createObjectNode();
-        stringLitExprJson.put("type","StringLitExpr");
+        stringLitExprJson.put("node","StringLitExpr");
         stringLitExprJson.put("value",n.getValue());
         return stringLitExprJson;
     }
@@ -716,17 +752,15 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
         }
 
     }
-    private List<ObjectNode> createVarDefStmts(VariableDeclarationExpr expr){
-
-
-            List<ObjectNode> varDefstmts = new ArrayList<>();
-            expr.getVariables().forEach(var -> {
-                ObjectNode varDefstmtJson = this.objectMapper.createObjectNode();
-                varDefstmtJson.put("node","LocalVarDefStmt");
-                this.visit(var,varDefstmtJson);
-                varDefstmts.add(varDefstmtJson);
-            });
-            return varDefstmts;
-
+    private <T extends NodeWithVariables<?>> List<ObjectNode> createVarDefStmts(T expr,String type) {
+        List<ObjectNode> varDefstmts = new ArrayList<>();
+        expr.getVariables().forEach(var -> {
+            ObjectNode varDefstmtJson = this.objectMapper.createObjectNode();
+            varDefstmtJson.put("node", type+"VarDefStmt");
+            this.visit(var, varDefstmtJson);
+            varDefstmts.add(varDefstmtJson);
+        });
+        return varDefstmts;
     }
+
 }
