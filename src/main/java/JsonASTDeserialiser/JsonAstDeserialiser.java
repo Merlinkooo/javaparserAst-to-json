@@ -172,13 +172,10 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
 
         switchEntryJson.put("node", "CaseStmt");
 
-       if(n.getLabels().size() > 0) {
-           Expression entryExpr = n.getLabels().get(0);
-           switchEntryJson.put("expression", this.visit(entryExpr));
-       }else{
-           switchEntryJson.put("expression", "default");
-       }
+       ArrayNode caseExpressions = this.objectMapper.createArrayNode();
+       n.getLabels().forEach(expr -> caseExpressions.add(expr.accept(this,null)));
 
+       switchEntryJson.put("expression",caseExpressions);
         //If there is multiple statements instead of BlockStmt create Json representation of imaginary
         //BlockStmt node in order to serialize it easily int ASTFRI-there CaseStmt counts only with one
         //statement
