@@ -575,6 +575,10 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
             });
 
         });
+        //part for constructors
+        ArrayNode constructors = this.objectMapper.createArrayNode();
+        classOrInterfDeclJson.put("constructors",constructors);
+        n.getConstructors().forEach(constr -> constructors.add(this.visit(constr,null)));
 
 
 
@@ -596,7 +600,7 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
     @Override
     public JsonNode visit(ArrayAccessExpr n, JsonNode arg) {
          ObjectNode jsonArrAccExpr = objectMapper.createObjectNode();
-         jsonArrAccExpr.put("type_node","ArrayAccesExpression");
+         jsonArrAccExpr.put("node","ArrayAccesExpr");
          n.getName().ifNameExpr( e -> jsonArrAccExpr.put("name",e.asNameExpr().toString()));
          jsonArrAccExpr.put("index",n.getIndex().asIntegerLiteralExpr().asNameExpr().toString());
          return jsonArrAccExpr;
