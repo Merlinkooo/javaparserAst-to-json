@@ -532,7 +532,7 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
                 parameterNodeJson.put("node","ParamVarDefStmt");
                 parameterNodeJson.put("name",n.getNameAsString());
                 parameterNodeJson.put("type",n.getType().accept(this,null));
-                parameterNodeJson.put("initialiser",NullNode.getInstance());
+
 
 
         return parameterNodeJson;
