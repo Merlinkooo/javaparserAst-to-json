@@ -374,6 +374,9 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
 
         constructorDefStmtJson.put("body",this.visit(n.getBody(),null));
 
+        constructorDefStmtJson.put("access",n.getModifiers().size() == 0 ?
+                TextNode.valueOf("internal") : this.visit(n.getModifiers().get(0),null));
+
         return constructorDefStmtJson;
     }
 
@@ -577,7 +580,8 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
         n.getFields().forEach(field -> {
             this.createVarDefStmts(field,"Member").forEach(var ->{
                 //We are only interested in access modifiers and we assume that access mod is first
-                var.put("acces",this.visit(field.getModifiers().get(0),null));
+                var.put("acces", field.getModifiers().size() == 0 ?
+                        TextNode.valueOf("internal") : this.visit(field.getModifiers().get(0),null));
                 attributes.add(var);
 
             });
