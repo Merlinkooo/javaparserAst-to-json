@@ -442,28 +442,15 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
         blockStatementJson.put("statements",statements);
         this.lasBlockStmtJson = lasBlockStmtJson;
 
-        n.getStatements().forEach(statement ->{
-
-            if(statement instanceof ExpressionStmt){
-                ExpressionStmt expressionStmt = (ExpressionStmt)statement;
-                //Check if expression is VariableDeclarationExpr,if true use different logic-method for
-                //creating LocalVarDefStmt
-                if(expressionStmt.getExpression() instanceof VariableDeclarationExpr){
-                    VariableDeclarationExpr declarationExpr = (VariableDeclarationExpr) expressionStmt.getExpression();
-                     this.createVarDefStmts(declarationExpr,"Local").forEach(localVar -> statements.add(localVar));
-                }else{
-                    //check for ExplicitConstructorInvocationStmt ,we dont want to this node to be visited here
-                    if (!(statement instanceof ExplicitConstructorInvocationStmt))
-                    statements.add(statement.accept(this,statements));
-                }
-
-            } else{
-                //check for ExplicitConstructorInvocationStmt ,we dont want to this node to be visited here
-                if (!(statement instanceof ExplicitConstructorInvocationStmt))
-                statements.add(statement.accept(this,statements));
+        n.getStatements().forEach(statement -> {
+            //check for ExplicitConstructorInvocationStmt ,we dont want to this node to be added among
+            // statements in BlockStmt, look at the way how ConstructorDefStmt in ASTFRI looks like
+            if (!(statement instanceof ExplicitConstructorInvocationStmt)) {
+                statements.add(statement.accept(this, null));
             }
 
         });
+
         return blockStatementJson;
     }
     /*FieldDeclaration is parent Node for Variable Declarator in purpose
