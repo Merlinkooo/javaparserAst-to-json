@@ -66,7 +66,10 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
             methodJson.put("name",n.getName().asString());
 
             //We are only interested in access modifier,should be first one
-            methodJson.put("access", this.visit(n.getModifiers().get(0),null));
+            // if there is no modifier,count it s internal=default,if there are 1 and more
+            //modifiers visit first modifier
+            methodJson.put("access",n.getModifiers().size() == 0 ?
+                    TextNode.valueOf("internal") : this.visit(n.getModifiers().get(0),null));
 
             ArrayNode parameters = this.objectMapper.createArrayNode();
             methodJson.put("parameters",parameters);
@@ -130,11 +133,16 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
     }
 
     //We are only interested in access modifiers in this stage
+    //so if there is no modifier ,it means it s default modifier-and equivalent of default is internal in ASTFRI
     @Override
     public JsonNode visit(Modifier n, JsonNode arg) {
+        String modifStr = n.getKeyword().asString();
 
+        if (modifStr.equals("private") || modifStr.equals("public") || modifStr.equals("protected")){
+            return TextNode.valueOf(modifStr);
+        }
 
-        return TextNode.valueOf(n.getKeyword().asString());
+        return TextNode.valueOf("internal");
 
     }
 
