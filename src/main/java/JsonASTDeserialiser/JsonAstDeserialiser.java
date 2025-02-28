@@ -194,25 +194,13 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
         if( n.getStatements().size() > 1){
             ObjectNode compoundStmt = this.objectMapper.createObjectNode();
             compoundStmt.put("node","CompoundStmt");
+
             ArrayNode statements = this.objectMapper.createArrayNode();
             compoundStmt.put("statements",statements);
+
             switchEntryJson.put("body",compoundStmt);
             n.getStatements().forEach(statement -> {
-
-                if (statement instanceof ExpressionStmt) {
-                    ExpressionStmt expressionStmt = (ExpressionStmt) statement;
-                    //Check if expression is VariableDeclarationExpr,if true use different logic-method for
-                    //creating LocalVarDefStmt
-                    if (expressionStmt.getExpression() instanceof VariableDeclarationExpr) {
-                        VariableDeclarationExpr declarationExpr = (VariableDeclarationExpr) expressionStmt.getExpression();
-                        this.createVarDefStmts(declarationExpr,"Local").forEach(localVar -> statements.add(localVar));
-                    } else {
-                        statements.add(statement.accept(this, statements));
-                    }
-
-                } else {
-                    statements.add(statement.accept(this, statements));
-                }
+               statements.add(statement.accept(this,null));
             });
         }else {
             var stmt = n.getStatements().getFirst();
@@ -220,7 +208,7 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
                 switchEntryJson.put("body",stmt.get().accept(this,null));
             }else {
                 //? what if case is empty,it makes no sense te create empty case,but this code can be compiled
-                switchEntryJson.put("body",this.objectMapper.createObjectNode().put("node","CompoundStmt"));
+                switchEntryJson.put("body",NullNode.getInstance());
             }
 
         }
