@@ -488,6 +488,7 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
     * MemberVarDefStmt or LocalVarDefStmt
     * calling node should ingnore return value
     * */
+
     @Override
     public JsonNode visit(VariableDeclarator n, JsonNode arg) {
 
@@ -504,6 +505,20 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
         return arg;
 
 
+    }
+
+    @Override
+    public JsonNode visit(BreakStmt n, JsonNode arg) {
+        ObjectNode breakStmtjson = this.objectMapper.createObjectNode();
+        breakStmtjson.put("node","BreakStmt");
+        return breakStmtjson;
+    }
+
+    @Override
+    public JsonNode visit(ContinueStmt n, JsonNode arg) {
+        ObjectNode continueStmtjson = this.objectMapper.createObjectNode();
+        continueStmtjson.put("node","ContinueStmt");
+        return continueStmtjson;
     }
 
     @Override
