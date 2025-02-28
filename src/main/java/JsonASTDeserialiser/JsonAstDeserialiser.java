@@ -85,10 +85,14 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
             return methodJson;
     }
 
-
+    // if inside of this statement is VariableDeclarationExpr,then returned Json representation will
+    //be either DefStmt - if we are declaring multiple variables or LocalVarDefStmt if only one variable
+    //logic to recognise which of that 2 cases is actuall is implemented in VariableDeclarationExpr
     @Override
     public JsonNode visit(ExpressionStmt n, JsonNode arg) {
-
+        if (n.getExpression() instanceof VariableDeclarationExpr) {
+            return n.getExpression().accept(this,null);
+        }
 
         ObjectNode expressionStmt = this.objectMapper.createObjectNode();
             expressionStmt.put("node","ExpressionStmt");
@@ -490,14 +494,44 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
     /*
         Second parameter should be ArrayNode  property of parent Node
      */
+
+    /*This method returns either DefStmt Json object representation-if there are multiple variables declared inside ,
+     *or
+     *LocalVarDefStmt only one variable inside this node
+     */
     @Override
     public JsonNode visit(VariableDeclarationExpr n, JsonNode arg) {
-        n.getVariables().forEach(variableDeclarator -> {
-            this.localVardDefStmts.put(variableDeclarator.getNameAsString(),this.objectMapper.createObjectNode());
-        });
+        var variables = n.getVariables();
 
-        n.getModifiers();
-        return null;
+        //If there are more than one variable,create DefStmt
+        if (variables.size() > 1){
+            ObjectNode defStmtJson = this.objectMapper.createObjectNode();
+            defStmtJson.put("node","DefStmt");
+            //array for particular VarDefStmts
+            ArrayNode definitions = this.objectMapper.createArrayNode();
+            defStmtJson.put("definitions", definitions);
+
+            variables.forEach(variable -> {
+                //object for LocalVarDefStmt
+                ObjectNode localVarDefStmtJson = this.objectMapper.createObjectNode();
+                localVarDefStmtJson.put("node","LocalVarDefStmt");
+
+                //visit variable and add properties Json object representation of LocalVarDefStmt
+                this.visit(variable,localVarDefStmtJson);
+
+                //add completed representation of LocalVarDefStm into array
+                definitions.add(localVarDefStmtJson);
+
+            });
+            return defStmtJson;
+        }
+
+        ObjectNode localVarDefStmtJson = this.objectMapper.createObjectNode();
+        localVarDefStmtJson.put("node","LocalVarDefStmt");
+        //add to localVarDefStmtJson properties
+        this.visit(variables.get(0),localVarDefStmtJson);
+
+        return localVarDefStmtJson;
     }
 
 
@@ -516,10 +550,12 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
         varDefStmtJson.put("name", n.getName().toString());
         varDefStmtJson.put("type", n.getType().accept(this,null));
         var initialzer = n.getInitializer();
-        if(initialzer.isPresent()) {
-            varDefStmtJson.put("initializer", this.visit(initialzer.get()));
-        }
 
+        varDefStmtJson.put("initializer", initialzer.isPresent()
+                                        ? initialzer.get().accept(this,null) :
+                                        NullNode.getInstance());
+
+        //returns input output parameter
         return arg;
 
 
