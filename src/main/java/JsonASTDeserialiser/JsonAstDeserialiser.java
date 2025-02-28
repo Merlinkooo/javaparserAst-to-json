@@ -284,9 +284,30 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
     public JsonNode visit(ForStmt n, JsonNode arg) {
         ObjectNode forStmtJson = this.objectMapper.createObjectNode();
         forStmtJson.put("node","ForStmt");
-        //TODO
-        if (n.getInitialization().size() == 0)
+        //InitPart
 
+        //Check if there is something in this part
+        if (n.getInitialization().size() == 0) {
+            forStmtJson.put("init", NullNode.getInstance());
+        }
+        //In this phase,we take only first expression,we assume that in this part we either asigning some value
+        //to variable or declaring new variable,and we have to create Stmt representation,because in ASTFRI
+        //ForStm in init part has Statement
+        Expression initExpr = n.getInitialization().get(0);
+
+        if(initExpr instanceof AssignExpr){
+                AssignExpr assignExpr = (AssignExpr)initExpr;
+                // Create virtual ExprStm node
+                ObjectNode exprStmtJson = this.objectMapper.createObjectNode();
+                exprStmtJson.put("node","ExpressionStmt");
+                exprStmtJson.put("expression",this.visit(assignExpr,null));
+
+                forStmtJson.put("init",exprStmtJson);
+        }else if (initExpr instanceof VariableDeclarationExpr){
+                VariableDeclarationExpr variableDeclarationExpr = (VariableDeclarationExpr) initExpr;
+
+
+        }
 
 
         //Condition part
@@ -478,12 +499,7 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
         n.getModifiers();
         return null;
     }
-    private ObjectNode createLocalVarDefStmt(VariableDeclarator declNode,int index){
-        ObjectNode localVarDefStmtJson = this.objectMapper.createObjectNode();
-        localVarDefStmtJson.put("node","LocalVarDefStmt");
-        this.visit(declNode,localVarDefStmtJson);
-        return localVarDefStmtJson;
-    }
+
 
     /*
     * Second parameter should be ObjectNode representation either of
@@ -501,7 +517,7 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
         varDefStmtJson.put("type", n.getType().accept(this,null));
         var initialzer = n.getInitializer();
         if(initialzer.isPresent()) {
-            varDefStmtJson.put("initialzer", this.visit(initialzer.get()));
+            varDefStmtJson.put("initializer", this.visit(initialzer.get()));
         }
 
         return arg;
