@@ -673,7 +673,7 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
         n.getFields().forEach(field -> {
             this.createVarDefStmts(field,"Member").forEach(var ->{
                 //We are only interested in access modifiers and we assume that access mod is first
-                var.put("acces", field.getModifiers().size() == 0 ?
+                var.put("acces", field.getModifiers().isEmpty() ?
                         TextNode.valueOf("internal") : this.visit(field.getModifiers().get(0),null));
                 attributes.add(var);
 
@@ -881,9 +881,11 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
                 methodCallExprJson.put("owner", n.getScope().get().accept(this,null));
 
         }else{
-            //if there is no scope, method owner will be either this or ClassRef-it s static method
+            //if there is no scope, method owner will be either ThisExpr or ClassRefExpr-it s static method
             // - implemented in ReferenceTypeResolver-method resolveMethodOwner
-            methodCallExprJson.put("owner",this.referenceTypeResolver.resolveMethodOwner(n).toJson());
+            var methodOwner = this.referenceTypeResolver.resolveMethodOwner(n);
+            methodCallExprJson.put("owner",methodOwner.isPresent()? methodOwner.get().toJson() :
+                                            null);
 
         }
 

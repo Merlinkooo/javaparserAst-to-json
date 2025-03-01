@@ -1,7 +1,7 @@
 package examples;
 
 public class Example<T extends Number> {
-    private String text = "Hello";
+    static transient String text = "Hello";
 
     private String  text3;
     private ReversePolishNotation<Integer> notation= new ReversePolishNotation<>();
@@ -12,7 +12,7 @@ public class Example<T extends Number> {
     public Example(){
         this("test");
     }
-    public void test(String param) {
+    void test(String param) {
         String text = "Local";
         text.length();
         param.length();

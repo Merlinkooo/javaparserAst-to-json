@@ -19,6 +19,8 @@ import com.github.javaparser.symbolsolver.resolution.typesolvers.ReflectionTypeS
 import java.io.File;
 import java.nio.file.Paths;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class ReferenceTypeResolver {
     private ObjectMapper objectMapper;
@@ -27,7 +29,8 @@ public class ReferenceTypeResolver {
 
     public ReferenceTypeResolver(ObjectMapper objectMapper,File file) {
         this.objectMapper = objectMapper;
-        //Folowing part of code is added in order to determine object Types,which can be useful in future
+        //Folowing part of code is added in order to determine object Types of name references,
+        // which can be useful in future
 
         CombinedTypeSolver typeSolver = new CombinedTypeSolver();
         typeSolver.add(new ReflectionTypeSolver());
@@ -39,13 +42,13 @@ public class ReferenceTypeResolver {
 
     /*Returns Reference if there is some match
     * */
-    public Reference determineReferenceType(Node node,NameExpr name) {
+    public Reference determineReferenceType(NameExpr name) {
         //if (name instanceof ThisExpr) return new Reference(Reference.ReferenceType.THIS_REFERENCE,"this",this.objectMapper);
 
         //Tries ty find the nearest anncestor for node ,is looking for MethodDecalaration and constructorDecl
-        Optional<Node> parentMethodOrConstructor = node.findAncestor(MethodDeclaration.class)
+        Optional<Node> parentMethodOrConstructor = name.findAncestor(MethodDeclaration.class)
                 .map(m -> (Node) m)
-                .or(() -> node.findAncestor(ConstructorDeclaration.class));
+                .or(() -> name.findAncestor(ConstructorDeclaration.class));
 
         if (parentMethodOrConstructor.isPresent()) {
             Node methodOrConstructor = parentMethodOrConstructor.get();
@@ -64,7 +67,7 @@ public class ReferenceTypeResolver {
         }
 
         // Skontrolujeme, či sa referenciu nachádza medzi atribútmi triedy
-        Optional<ClassOrInterfaceDeclaration> classDecl = node.findAncestor(ClassOrInterfaceDeclaration.class);
+        Optional<ClassOrInterfaceDeclaration> classDecl = name.findAncestor(ClassOrInterfaceDeclaration.class);
         if (classDecl.isPresent()) {
             if (classDecl.get().findAll(FieldDeclaration.class).stream()
                     .flatMap(field -> field.getVariables().stream())
@@ -74,5 +77,40 @@ public class ReferenceTypeResolver {
             }
         }
         return new Reference(Reference.ReferenceType.CLASS_REFERENCE,name.toString(),this.objectMapper);
+    }
+
+    public Optional<Reference> resolveMethodOwner(MethodCallExpr callExpr){
+        Optional<ClassOrInterfaceDeclaration> classDecl = callExpr.findAncestor(ClassOrInterfaceDeclaration.class);
+
+        AtomicReference<Reference> ref = new AtomicReference<>(null);
+        //find method with same name as methodCallExpr and figure out,if this method has static keyword among
+        //modifiers
+        if (classDecl.isPresent()){
+            //This part can be modified to different syntax in order to enable ending of cycle in case there is match
+            //with names
+            classDecl.get().getMethods().forEach(method -> {
+                //check if names are same
+                if (method.getName().asString().equals(callExpr.getNameAsString())) {
+                    AtomicBoolean isStatic = new AtomicBoolean(false);
+                    //check if among modifiers is static keyWord
+                    method.getModifiers().forEach( modifier -> {
+                        if (modifier.getKeyword().asString().equals("static")) isStatic.set(true);
+                    });
+                    //if it variable is static is true set reference as ClassReference or set it as ThisReference
+                    if(isStatic.get()) {
+                        ref.set(new Reference(Reference.ReferenceType.CLASS_REFERENCE,
+                                classDecl.get().getNameAsString(), this.objectMapper)) ;
+                    }else {
+                        ref.set(new Reference(Reference.ReferenceType.THIS_REFERENCE,
+                                classDecl.get().getNameAsString(), this.objectMapper));
+                    }
+
+                }
+
+            });
+
+        }
+
+        return Optional.of(ref.get());
     }
 }

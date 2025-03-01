@@ -32,11 +32,11 @@ public class Test {
 
 
         JavaSymbolSolver symbolSolver = new JavaSymbolSolver(typeSolver);
-        StaticJavaParser.getConfiguration().setSymbolResolver(symbolSolver);*/
+        StaticJavaParser.getConfiguration().putSymbolResolver(symbolSolver);*/
         //JsonAstDeserialiser visitor = new JsonAstDeserialiser("src/main/java/examples/ReversePolishNotation.java");
         File file = new File("src/main/java/examples/Example.java");
         ParserConfiguration conf = new ParserConfiguration();
-        conf.setLanguageLevel(ParserConfiguration.LanguageLevel.JAVA_17);
+        conf.putLanguageLevel(ParserConfiguration.LanguageLevel.JAVA_17);
         JavaParser javaParser = new JavaParser(conf);
 
         CompilationUnit cu = javaParser.parse(file).getResult().get();

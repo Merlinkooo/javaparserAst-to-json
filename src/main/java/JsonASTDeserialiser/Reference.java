@@ -21,6 +21,11 @@ public class Reference {
     }
     public ObjectNode toJson(){
         ObjectNode node =  objectMapper.createObjectNode();
+        if (this.type == ReferenceType.THIS_REFERENCE)
+        {
+            node.put("node","ThisExpr");
+            return node;
+        }
         node.put("node",this.type.getName());
         node.put("name",this.nameOfReferencedEntity);
         return node;
@@ -30,7 +35,7 @@ public class Reference {
         PARAM_REFERENCE("ParamVarRefExpr"),
         LOCAL_VAR_REFERENCE("LocalVarRefExpr"),
         MEMBER_VAR_REFERENCE("MemberVarRefExpr"),
-        THIS_REFERENCE("ThisRefExpr"),
+        THIS_REFERENCE("ThisExpr"),
         CLASS_REFERENCE("ClassRefExpr");
         private String name;
         ReferenceType(String name){
