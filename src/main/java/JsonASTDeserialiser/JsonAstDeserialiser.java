@@ -161,11 +161,8 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
     @Override
     public JsonNode visit(SwitchStmt n, JsonNode arg) {
         ObjectNode switchStmtJson = objectMapper.createObjectNode();
-        switchStmtJson.put("node",TextNode.valueOf("SwitchStmt"));
-        switchStmtJson.put("entry",
-                n.getSelector() instanceof NameExpr ?
-                this.referenceTypeResolver.determineReferenceType(n,(NameExpr)n.getSelector()).toJson() :
-                n.getSelector().accept(this,null));
+        switchStmtJson.put("node","SwitchStmt");
+        switchStmtJson.put("entry", n.getSelector().accept(this,null));
 
         ArrayNode cases = objectMapper.createArrayNode();
         n.getEntries().forEach(entry -> cases.add(this.visit(entry,cases)));
@@ -259,7 +256,7 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
     public JsonNode visit(DoStmt n, JsonNode arg) {
         ObjectNode doStmtJson = this.objectMapper.createObjectNode();
         doStmtJson.put("node","DoWhileStmt");
-        doStmtJson.put("condition",this.visit(n.getCondition()));
+        doStmtJson.put("condition",n.getCondition().accept(this,null));
 
 
         //Need to check if in body is different statement from BlockStmt,if there is somethin different
@@ -381,16 +378,11 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
         ObjectNode throwStatementJson = objectMapper.createObjectNode();
         throwStatementJson.put("node","ThrowStmt");
 
-        throwStatementJson.put("expression",this.visit(n.getExpression()));
+        throwStatementJson.put("expression",n.getExpression().accept(this,null));
         return throwStatementJson;
     }
 
-    private ObjectNode visit(Expression expression){
-        return expression instanceof NameExpr ?
-                this.referenceTypeResolver.determineReferenceType(expression,(NameExpr) expression).toJson():
-                ((ObjectNode)expression.accept(this,null));
 
-    }
 
     @Override
     public JsonNode visit(SuperExpr n, JsonNode arg) {
@@ -725,14 +717,14 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
         AssignExpr.Operator op  = n.getOperator();
         if (op == AssignExpr.Operator.ASSIGN) {
             assignExprJson.put("node", "AssignExpr");
-            assignExprJson.put("left",this.visit(n.getTarget()));
+            assignExprJson.put("left",n.getTarget().accept(this,null));
 
-            assignExprJson.put("right",this.visit(n.getValue()));
+            assignExprJson.put("right",n.getValue().accept(this,null));
         }else{
             assignExprJson.put("node", "CompoundAssignExpr");
-            assignExprJson.put("left",this.visit(n.getTarget()));
+            assignExprJson.put("left",n.getTarget().accept(this,null));
 
-            assignExprJson.put("right",this.visit(n.getValue()));
+            assignExprJson.put("right",n.getValue().accept(this,null));
             assignExprJson.put("operator",op.asString());
         }
         return assignExprJson;
@@ -744,10 +736,10 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
         ObjectNode binaryExprJson = objectMapper.createObjectNode();
         binaryExprJson.put("node","BinOpExpr");
         Expression left = n.getLeft();
-        binaryExprJson.put("left",this.visit(left));
+        binaryExprJson.put("left",left.accept(this,null));
 
         Expression right = n.getRight();
-        binaryExprJson.put("right",this.visit(right));
+        binaryExprJson.put("right",right.accept(this,null));
 
         binaryExprJson.put("operator",n.getOperator().asString());
         return binaryExprJson;
@@ -761,7 +753,7 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
         unaryExprJson.put("operator",operator.asString());
         unaryExprJson.put("isPostfix", operator.isPostfix() ? true : false);
         Expression expr = n.getExpression();
-        unaryExprJson.put("argument",this.visit(expr));
+        unaryExprJson.put("argument",expr.accept(this,null));
 
         return unaryExprJson;
     }
@@ -774,10 +766,10 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
         Expression cond = n.getCondition();
         condExprJson.put("condition",cond.accept(this,null));
         Expression then = n.getThenExpr();
-        condExprJson.put("ifTrue",this.visit(then));
+        condExprJson.put("ifTrue",then.accept(this,null));
 
         Expression or = n.getElseExpr();
-        condExprJson.put("ifFalse",this.visit(or));
+        condExprJson.put("ifFalse",or.accept(this,null));
         return condExprJson;
     }
 
@@ -875,8 +867,8 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
 
     @Override
     public JsonNode visit(NameExpr n, JsonNode arg) {
-        return new TextNode(n.getNameAsString());
-        //return null;
+        return this.referenceTypeResolver.determineReferenceType(n).toJson();
+
     }
 
     @Override
@@ -886,19 +878,19 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
         methodCallExprJson.put("name",n.getNameAsString());
 
         if(n.getScope().isPresent()){
-            if (n.getScope().get() instanceof NameExpr){
-                methodCallExprJson.put("owner",
-                        this.referenceTypeResolver.determineReferenceType(n,(NameExpr) n.getScope().get()).toJson());
-            } else{
-                methodCallExprJson.put("owner",n.getScope().get().accept(this,null));
-            }
+                methodCallExprJson.put("owner", n.getScope().get().accept(this,null));
+
+        }else{
+            //if there is no scope, method owner will be either this or ClassRef-it s static method
+            // - implemented in ReferenceTypeResolver-method resolveMethodOwner
+            methodCallExprJson.put("owner",this.referenceTypeResolver.resolveMethodOwner(n).toJson());
+
         }
+
+
         ArrayNode arguments = objectMapper.createArrayNode();
-        /*Question is how to determine types of reference expressions in case some of argument
-        *is this reference expression
-        */
-        n.getArguments().forEach(e -> arguments.add(this.visit(e)));
-            // If argument is type of ThisExpr,visit ThisExpr
+        n.getArguments().forEach(e -> arguments.add(e.accept(this,null)));
+
         methodCallExprJson.put("arguments",arguments);
         return methodCallExprJson;
     }
