@@ -281,37 +281,66 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
         //Check if there is something in this part
         if (n.getInitialization().size() == 0) {
             forStmtJson.put("init", NullNode.getInstance());
-        }
-        //In this phase,we take only first expression,we assume that in this part we either asigning some value
-        //to variable or declaring new variable,and we have to create Stmt representation,because in ASTFRI
-        //ForStm in init part has Statement
-        Expression initExpr = n.getInitialization().get(0);
+        }else {
+            //In this phase,we take only first expression,ForStm in init part has Statement,so if there is assigntExpr,
+            //or UnaryExpr,whatewer we need to create virtual ExpressionStmt,if there is Declaration expression visit method
+            //of this node returns proper format-either DefStmt or LocalVarDefStmt
+            Expression initExpr = n.getInitialization().get(0);
 
-        if(initExpr instanceof AssignExpr){
-                AssignExpr assignExpr = (AssignExpr)initExpr;
-                // Create virtual ExprStm node
+            if (initExpr instanceof VariableDeclarationExpr) {
+                forStmtJson.put("init",initExpr.accept(this,null));
+
+            } else {
+                //If expression inside is not VariableDeclarationExpr,create virtual ExpressionStmt
                 ObjectNode exprStmtJson = this.objectMapper.createObjectNode();
-                exprStmtJson.put("node","ExpressionStmt");
-                exprStmtJson.put("expression",this.visit(assignExpr,null));
+                exprStmtJson.put("node", "ExpressionStmt");
+                exprStmtJson.put("expression", initExpr.accept(this, null));
 
-                forStmtJson.put("init",exprStmtJson);
-        }else if (initExpr instanceof VariableDeclarationExpr){
-                VariableDeclarationExpr variableDeclarationExpr = (VariableDeclarationExpr) initExpr;
+                forStmtJson.put("init", exprStmtJson);
 
 
+            }
         }
-
 
         //Condition part
-        if(n.getCompare().isPresent()) {
-            Expression cond = n.getCompare().get();
-            forStmtJson.put("condition",cond.accept(this,null));
+        Optional<Expression> condition = n.getCompare();
+        forStmtJson.put("condition", condition.isPresent() ?
+                                                condition.get().accept(this,null) :
+                                                NullNode.getInstance());
+
+
+        //Update part
+        //Same as with init part we take only first expression now,later it can be solved by implementing
+        //logic with BinOpExpr with comma
+
+        //First check count of expressions
+        if (n.getUpdate().size() == 0){
+            forStmtJson.put("step", NullNode.getInstance());
+        }else{
+            //Create virtual ExpressionStmt,
+            ObjectNode exprStmtJson = this.objectMapper.createObjectNode();
+            exprStmtJson.put("node", "ExpressionStmt");
+            exprStmtJson.put("expression", n.getUpdate().get(0).accept(this, null));
+
+            forStmtJson.put("step", exprStmtJson);
         }
 
-        //TODO
-        n.getUpdate();
-        //TODO
-        n.getBody();
+        //Body part
+        // we need create virtual BlockStmt,if there is some different node than BlockStmt,look at the ASTFRI-
+        //requires CompoundStmt-BlockStmt
+        if (n.getBody() instanceof BlockStmt){
+            forStmtJson.put("body",n.getBody().accept(this,null));
+        }else {
+            //Create virtual BlockStmt
+            ObjectNode blockStmtJson = this.objectMapper.createObjectNode();
+            blockStmtJson.put("node","CompoundStmt");
+            ArrayNode statements = objectMapper.createArrayNode();
+            blockStmtJson.put("statements",statements);
+            statements.add(n.getBody().accept(this,null));
+
+            forStmtJson.put("body",blockStmtJson);
+        }
+
         return forStmtJson;
     }
 
@@ -491,7 +520,7 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
                 ObjectNode localVarDefStmtJson = this.objectMapper.createObjectNode();
                 localVarDefStmtJson.put("node","LocalVarDefStmt");
 
-                //visit variable and add properties Json object representation of LocalVarDefStmt
+                //visit variable and add properties to Json object representation of LocalVarDefStmt
                 this.visit(variable,localVarDefStmtJson);
 
                 //add completed representation of LocalVarDefStm into array
@@ -565,10 +594,6 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
             default -> {return this.objectMapper.createObjectNode().put("node","UnknownType");}
         }
     }
-    /*
-    * This visit method expects second argument ArrayNode to which
-    * final Json represantion of parameter is added
-    * */
 
     @Override
     public JsonNode visit(Parameter n, JsonNode arg) {
