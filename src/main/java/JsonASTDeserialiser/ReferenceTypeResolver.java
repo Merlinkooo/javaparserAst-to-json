@@ -81,36 +81,43 @@ public class ReferenceTypeResolver {
 
     public Optional<Reference> resolveMethodOwner(MethodCallExpr callExpr){
         Optional<ClassOrInterfaceDeclaration> classDecl = callExpr.findAncestor(ClassOrInterfaceDeclaration.class);
-
-        AtomicReference<Reference> ref = new AtomicReference<>(null);
+        boolean isStatic = false;
+        Reference ref = null;
         //find method with same name as methodCallExpr and figure out,if this method has static keyword among
         //modifiers
-        if (classDecl.isPresent()){
-            //This part can be modified to different syntax in order to enable ending of cycle in case there is match
-            //with names
-            classDecl.get().getMethods().forEach(method -> {
-                //check if names are same
+        if (classDecl.isPresent()) {
+
+            var methods = classDecl.get().getMethods();
+
+            //seach for method declaration  with same as method call expr in parameter and then search
+            //for static keyword among modifiers
+            for (int i = 0; i < methods.size(); i++) {
+                var method = methods.get(i);
                 if (method.getName().asString().equals(callExpr.getNameAsString())) {
-                    AtomicBoolean isStatic = new AtomicBoolean(false);
-                    //check if among modifiers is static keyWord
-                    method.getModifiers().forEach( modifier -> {
-                        if (modifier.getKeyword().asString().equals("static")) isStatic.set(true);
-                    });
-                    //if it variable is static is true set reference as ClassReference or set it as ThisReference
-                    if(isStatic.get()) {
-                        ref.set(new Reference(Reference.ReferenceType.CLASS_REFERENCE,
-                                classDecl.get().getNameAsString(), this.objectMapper)) ;
-                    }else {
-                        ref.set(new Reference(Reference.ReferenceType.THIS_REFERENCE,
-                                classDecl.get().getNameAsString(), this.objectMapper));
+
+                    var modifiers = method.getModifiers();
+
+                    for (int j = 0; j < modifiers.size(); j++) {
+                        if (modifiers.get(j).getKeyword().asString().equals("static")) {
+                            isStatic = true;
+                            break;
+                        }
                     }
 
-                }
+                    if (isStatic) {
+                        ref = new Reference(Reference.ReferenceType.CLASS_REFERENCE,
+                                classDecl.get().getNameAsString(), this.objectMapper);
+                    } else {
+                        ref = new Reference(Reference.ReferenceType.THIS_REFERENCE,
+                                classDecl.get().getNameAsString(), this.objectMapper);
+                    }
+                    break;
 
-            });
+                }
+            }
+
 
         }
-
-        return Optional.of(ref.get());
+        return Optional.of(ref);
     }
 }
