@@ -220,9 +220,25 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
     public JsonNode visit(WhileStmt n, JsonNode arg) {
         ObjectNode whileStmtJson = this.objectMapper.createObjectNode();
         whileStmtJson.put("node","WhileStmt");
-        whileStmtJson.put("condition",this.visit(n.getCondition()));
+        whileStmtJson.put("condition",n.getCondition().accept(this,null));
 
-        whileStmtJson.put("body",n.getBody().accept(this,null));
+        //Need to check if in body is different statement from BlockStmt,if there is somethin different
+        //create virtual BlockStmt,ASTFRI -requires in body part CompoundStmt-BlockStmt
+        Statement body = n.getBody();
+        if (body instanceof BlockStmt){
+            whileStmtJson.put("body",body.accept(this,null));
+        } else {
+            //Create virtual BlockStmt
+            ObjectNode blockStmtJson = this.objectMapper.createObjectNode();
+            blockStmtJson.put("node","CompoundStmt");
+            ArrayNode statements = objectMapper.createArrayNode();
+            blockStmtJson.put("statements",statements);
+            statements.add(body.accept(this,null));
+
+            whileStmtJson.put("body",blockStmtJson);
+        }
+
+
         return whileStmtJson;
 
     }
@@ -246,7 +262,23 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
         doStmtJson.put("condition",this.visit(n.getCondition()));
 
 
-        doStmtJson.put("body",n.getBody().accept(this,null));
+        //Need to check if in body is different statement from BlockStmt,if there is somethin different
+        //create virtual BlockStmt,ASTFRI -requires in body part CompoundStmt-BlockStmt
+        Statement body = n.getBody();
+        if (body instanceof BlockStmt){
+            doStmtJson.put("body",body.accept(this,null));
+        } else {
+            //Create virtual BlockStmt
+            ObjectNode blockStmtJson = this.objectMapper.createObjectNode();
+            blockStmtJson.put("node","CompoundStmt");
+            ArrayNode statements = objectMapper.createArrayNode();
+            blockStmtJson.put("statements",statements);
+            statements.add(body.accept(this,null));
+
+            doStmtJson.put("body",blockStmtJson);
+        }
+
+
         return doStmtJson;
 
     }
