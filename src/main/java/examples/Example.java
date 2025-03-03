@@ -1,16 +1,16 @@
 package examples;
 
 public class Example<T extends Number> {
-    static transient String text = "Hello";
-
-    private String  text3;
-    private ReversePolishNotation<Integer> notation= new ReversePolishNotation<>();
+    private int number;
 
     public Example(String text){
-        this.text = text;
+
     }
     public Example(){
         this("test");
+    }
+    public int getNumber(){
+        return number;
     }
     void test(String param) {
         String text = "Local";
@@ -18,11 +18,11 @@ public class Example<T extends Number> {
         param.length();
         {text = "10";}
         // Parameter//
-        switch(text){
-            case "priezvisko","meno":{
+        switch(getNumber()){
+            case 10:{
 
             }
-            case "text" :
+            case 11 :
 
         }
 

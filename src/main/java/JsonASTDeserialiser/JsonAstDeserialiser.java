@@ -245,6 +245,7 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
         ObjectNode genParamJson = this.objectMapper.createObjectNode();
         genParamJson.put("node","GenericParam");
         genParamJson.put("name",n.getName().toString());
+        // If there is some restriction to generic param-we take only first one or put there null
         genParamJson.put("constraint",n.getTypeBound().isEmpty() ?
                 null : n.getTypeBound().get(0).asString());
 
@@ -685,7 +686,7 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
         classOrInterfDeclJson.put("constructors",constructors);
         n.getConstructors().forEach(constr -> constructors.add(this.visit(constr,null)));
 
-
+        classOrInterfDeclJson.put("destructor",NullNode.getInstance());
 
         ArrayNode methods = objectMapper.createArrayNode();
         classOrInterfDeclJson.put("methods",methods);

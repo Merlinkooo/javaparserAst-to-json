@@ -36,7 +36,7 @@ public class Test {
         //JsonAstDeserialiser visitor = new JsonAstDeserialiser("src/main/java/examples/ReversePolishNotation.java");
         File file = new File("src/main/java/examples/Example.java");
         ParserConfiguration conf = new ParserConfiguration();
-        conf.putLanguageLevel(ParserConfiguration.LanguageLevel.JAVA_17);
+        conf.setLanguageLevel(ParserConfiguration.LanguageLevel.JAVA_17);
         JavaParser javaParser = new JavaParser(conf);
 
         CompilationUnit cu = javaParser.parse(file).getResult().get();
