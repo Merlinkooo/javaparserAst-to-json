@@ -6,20 +6,19 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public class Reference {
     private ReferenceType type;
-    private ObjectMapper objectMapper;
     private String nameOfReferencedEntity;
 
 
-    public Reference(ReferenceType type,String nameOfReferencedEntity,ObjectMapper objectMapper){
+    public Reference(ReferenceType type,String nameOfReferencedEntity){
         this.type = type;
         this.nameOfReferencedEntity = nameOfReferencedEntity;
-        this.objectMapper = objectMapper;
+
     }
 
     public ReferenceType getType() {
         return type;
     }
-    public ObjectNode toJson(){
+    public ObjectNode toJson(ObjectMapper objectMapper){
         ObjectNode node =  objectMapper.createObjectNode();
         if (this.type == ReferenceType.THIS_REFERENCE)
         {

@@ -48,11 +48,9 @@ public class ReversePolishNotation<T extends Number> {
         });
         return numbers.pop();
     }
-    /*Ja
-    som viacriadkovy komentar
-     */
+
     public double memoryRecall(){
-        return memory;// aj ja som tu
+        return memory;
     }
 
     public void memoryClear(){

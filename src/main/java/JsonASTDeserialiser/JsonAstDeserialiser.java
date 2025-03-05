@@ -128,12 +128,12 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
 
     @Override
     public JsonNode visit(UnknownType n, JsonNode arg) {
-        return this.objectMapper.createObjectNode().put("node","UnknownType");
+        return this.objectMapper.createObjectNode().put("node","Unknown");
     }
 
     @Override
     public JsonNode visit(VoidType n, JsonNode arg) {
-        return this.objectMapper.createObjectNode().put("node","VoidType");
+        return this.objectMapper.createObjectNode().put("node","Void");
     }
 
     //We are only interested in access modifiers in this stage
@@ -153,7 +153,7 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
     @Override
     public JsonNode visit(CharLiteralExpr n, JsonNode arg) {
         ObjectNode charLiteralExprJson = objectMapper.createObjectNode();
-        charLiteralExprJson.put("type", "CharLitExpr");
+        charLiteralExprJson.put("node", "CharLitExpr");
         charLiteralExprJson.put("value",TextNode.valueOf(n.getValue()));
         return charLiteralExprJson;
     }
@@ -184,7 +184,7 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
        ArrayNode caseExpressions = this.objectMapper.createArrayNode();
        n.getLabels().forEach(expr -> caseExpressions.add(expr.accept(this,null)));
 
-       switchEntryJson.put("expression",caseExpressions);
+       switchEntryJson.put("expressions",caseExpressions);
         //If there is multiple statements instead of BlockStmt create Json representation of imaginary
         //BlockStmt node in order to serialize it easily int ASTFRI-there CaseStmt counts only with one
         //statement
@@ -402,6 +402,7 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
         if (anncestor.isPresent()) {
             ClassOrInterfaceDeclaration classDec = anncestor.get();
             //check if constructor was called with this
+
             if (n.isThis()) {
                 baseInitStmtJson.put("base",classDec.getNameAsString());
             //or it is with super,we dont consider any other option
@@ -608,15 +609,15 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
     public JsonNode visit(PrimitiveType n, JsonNode arg) {
 
         switch (n.getType()){
-            case INT -> {return  this.objectMapper.createObjectNode().put("node","IntType");}
-            case BYTE -> {return this.objectMapper.createObjectNode().put("node","IntType");}
-            case SHORT -> {return this.objectMapper.createObjectNode().put("node","IntType");}
-            case LONG ->  {return this.objectMapper.createObjectNode().put("node","IntType");}
-            case CHAR -> {return this.objectMapper.createObjectNode().put("node","CharType");}
-            case FLOAT -> {return this.objectMapper.createObjectNode().put("node","FloatType");}
-            case DOUBLE -> {return this.objectMapper.createObjectNode().put("node","FloatType");}
-            case BOOLEAN -> {return  this.objectMapper.createObjectNode().put("node","BoolType");}
-            default -> {return this.objectMapper.createObjectNode().put("node","UnknownType");}
+            case INT -> {return  this.objectMapper.createObjectNode().put("node","Int");}
+            case BYTE -> {return this.objectMapper.createObjectNode().put("node","Int");}
+            case SHORT -> {return this.objectMapper.createObjectNode().put("node","Int");}
+            case LONG ->  {return this.objectMapper.createObjectNode().put("node","Int");}
+            case CHAR -> {return this.objectMapper.createObjectNode().put("node","Char");}
+            case FLOAT -> {return this.objectMapper.createObjectNode().put("node","Float");}
+            case DOUBLE -> {return this.objectMapper.createObjectNode().put("node","Float");}
+            case BOOLEAN -> {return  this.objectMapper.createObjectNode().put("node","Bool");}
+            default -> {return this.objectMapper.createObjectNode().put("node","Unknown");}
         }
     }
 
@@ -642,15 +643,15 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
         ObjectNode classTypeJson = this.objectMapper.createObjectNode();
         if(n.getParentNode().isPresent() && n.getParentNode().get() instanceof ObjectCreationExpr) {
 
-            classTypeJson.put("node", "UserType");
+            classTypeJson.put("node", "User");
             classTypeJson.put("name", n.getNameAsString());
 
         }else {
 
-            classTypeJson.put("node", "IndirectionType");
+            classTypeJson.put("node", "Indirection");
 
             ObjectNode inderectTypeJson = this.objectMapper.createObjectNode();
-            inderectTypeJson.put("node", "UserType");
+            inderectTypeJson.put("node", "User");
             inderectTypeJson.put("name", n.getNameAsString());
             classTypeJson.put("indirect", inderectTypeJson);
         }
@@ -670,7 +671,7 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
         n.getModifiers().forEach(mod -> modifiers.add(this.visit(mod,null)));*/
 
         ArrayNode attributes = objectMapper.createArrayNode();
-        classOrInterfDeclJson.put("atrributes",attributes);
+        classOrInterfDeclJson.put("attributes",attributes);
         n.getFields().forEach(field -> {
             this.createVarDefStmts(field,"Member").forEach(var ->{
                 //We are only interested in access modifiers and we assume that access mod is first
@@ -868,7 +869,7 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
 
     @Override
     public JsonNode visit(NameExpr n, JsonNode arg) {
-        return this.referenceTypeResolver.determineReferenceType(n).toJson();
+        return this.referenceTypeResolver.determineReferenceType(n).toJson(this.objectMapper);
 
     }
 
@@ -885,8 +886,9 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
             //if there is no scope, method owner will be either ThisExpr or ClassRefExpr-it s static method
             // - implemented in ReferenceTypeResolver-method resolveMethodOwner
             var methodOwner = this.referenceTypeResolver.resolveMethodOwner(n);
-            methodCallExprJson.put("owner",methodOwner.isPresent()? methodOwner.get().toJson() :
-                                            null);
+            methodCallExprJson.put("owner",methodOwner.isPresent()?
+                                                        methodOwner.get().toJson(this.objectMapper) :
+                                                         null);
 
         }
 
@@ -901,7 +903,8 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
     @Override
     public JsonNode visit(FieldAccessExpr n, JsonNode arg) {
         return new Reference(Reference.ReferenceType.MEMBER_VAR_REFERENCE,
-                n.getNameAsString(),this.objectMapper).toJson();
+                n.getNameAsString()).toJson(this.objectMapper);
+
     }
 
     public String convertToJson(final Node node){

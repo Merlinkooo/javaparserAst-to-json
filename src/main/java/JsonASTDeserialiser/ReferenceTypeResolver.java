@@ -45,38 +45,38 @@ public class ReferenceTypeResolver {
     public Reference determineReferenceType(NameExpr name) {
         //if (name instanceof ThisExpr) return new Reference(Reference.ReferenceType.THIS_REFERENCE,"this",this.objectMapper);
 
-        //Tries ty find the nearest anncestor for node ,is looking for MethodDecalaration and constructorDecl
+        //Tries ty find the nearest anncestor for node of type either MethodDecalaration or ConstructorDecl
         Optional<Node> parentMethodOrConstructor = name.findAncestor(MethodDeclaration.class)
                 .map(m -> (Node) m)
                 .or(() -> name.findAncestor(ConstructorDeclaration.class));
+
 
         if (parentMethodOrConstructor.isPresent()) {
             Node methodOrConstructor = parentMethodOrConstructor.get();
 
             //Tries to find out if name of parameter of method or constructor declaration matches with name
             if (methodOrConstructor.findAll(Parameter.class).stream().anyMatch(p -> p.getNameAsString().equals(name.toString()))) {
-                System.out.println("  🔹 Objekt je PARAMETER metódy.");
-                return new Reference(Reference.ReferenceType.PARAM_REFERENCE, name.toString(), this.objectMapper);
+                return new Reference(Reference.ReferenceType.PARAM_REFERENCE, name.toString());
             }
 
-            // Skontrolujeme, či sa referenciu nachádza medzi lokálnymi premennými
+            // Tries to find out if nameExpr is equal to name one of the local variables
             if (methodOrConstructor.findAll(VariableDeclarator.class).stream().anyMatch(v -> v.getNameAsString().equals(name.toString()))) {
-                System.out.println("  🔹 Objekt je LOKÁLNA PREMENNÁ.");
-                return new Reference(Reference.ReferenceType.LOCAL_VAR_REFERENCE, name.toString(), this.objectMapper);
+                return new Reference(Reference.ReferenceType.LOCAL_VAR_REFERENCE, name.toString());
             }
         }
 
-        // Skontrolujeme, či sa referenciu nachádza medzi atribútmi triedy
+        //Check for match of the namexpr with names of the attributes
         Optional<ClassOrInterfaceDeclaration> classDecl = name.findAncestor(ClassOrInterfaceDeclaration.class);
         if (classDecl.isPresent()) {
             if (classDecl.get().findAll(FieldDeclaration.class).stream()
                     .flatMap(field -> field.getVariables().stream())
                     .anyMatch(v -> v.getNameAsString().equals(name.toString()))) {
-                System.out.println("  🔹 Objekt je ATRIBÚT triedy.");
-                return new Reference(Reference.ReferenceType.MEMBER_VAR_REFERENCE, name.toString(), this.objectMapper);
+
+                return new Reference(Reference.ReferenceType.MEMBER_VAR_REFERENCE, name.toString());
             }
         }
-        return new Reference(Reference.ReferenceType.CLASS_REFERENCE,name.toString(),this.objectMapper);
+        //If there was no match with names till this point ,we can assume nameExpr given is name of class
+        return new Reference(Reference.ReferenceType.CLASS_REFERENCE,name.toString());
     }
 
     public Optional<Reference> resolveMethodOwner(MethodCallExpr callExpr){
@@ -106,10 +106,10 @@ public class ReferenceTypeResolver {
 
                     if (isStatic) {
                         ref = new Reference(Reference.ReferenceType.CLASS_REFERENCE,
-                                classDecl.get().getNameAsString(), this.objectMapper);
+                                classDecl.get().getNameAsString());
                     } else {
                         ref = new Reference(Reference.ReferenceType.THIS_REFERENCE,
-                                classDecl.get().getNameAsString(), this.objectMapper);
+                                classDecl.get().getNameAsString());
                     }
                     break;
 
