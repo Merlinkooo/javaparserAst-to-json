@@ -716,19 +716,13 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
     @Override
     public JsonNode visit(AssignExpr n, JsonNode arg) {
         ObjectNode assignExprJson = objectMapper.createObjectNode();
-        AssignExpr.Operator op  = n.getOperator();
-        if (op == AssignExpr.Operator.ASSIGN) {
-            assignExprJson.put("node", "AssignExpr");
-            assignExprJson.put("left",n.getTarget().accept(this,null));
 
-            assignExprJson.put("right",n.getValue().accept(this,null));
-        }else{
-            assignExprJson.put("node", "CompoundAssignExpr");
-            assignExprJson.put("left",n.getTarget().accept(this,null));
+        assignExprJson.put("node","BinOpExpr");
+        assignExprJson.put("left",n.getTarget().accept(this,null));
+        assignExprJson.put("right",n.getValue().accept(this,null));
+        assignExprJson.put("operator",n.getOperator().asString());
 
-            assignExprJson.put("right",n.getValue().accept(this,null));
-            assignExprJson.put("operator",op.asString());
-        }
+
         return assignExprJson;
     }
 
