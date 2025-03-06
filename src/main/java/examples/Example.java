@@ -10,6 +10,29 @@ import java.util.concurrent.atomic.AtomicReference;
 public class Example<T extends Number> extends ExampleParent{
     private int number;
     private String text;
+
+    public int calculate(int first,int second,char operator){
+
+        ArrayList<Character> operators = new ArrayList<>(Arrays.asList('+','-','*','/'));
+        switch (operator){
+            case '*' : return first * second;
+            case '/' : return first / second;
+            case '+' : return first + second;
+            case '-' : return first - second;
+            default : {
+                char op;
+                Scanner sc = new Scanner(System.in);
+                do {
+                    System.out.println("Invalid operator given");
+                    System.out.println("Choose one from following operators : + - * /");
+                    System.out.print(">");
+                    op = sc.next().charAt(0);
+                } while (!isValidOperator(operators,op));
+                return calculate(first,second,op);
+            }
+        }
+    }
+
     public Example(String text){
         super(10);
         this.text = text;
@@ -37,27 +60,7 @@ public class Example<T extends Number> extends ExampleParent{
             System.out.println(text);
         }
     }
-    public int calculate(int first,int second,char operator){
 
-        ArrayList<Character> operators = new ArrayList<>(Arrays.asList('+','-','*','/'));
-        switch (operator){
-            case '*' : return first * second;
-            case '/' : return first / second;
-            case '+' : return first + second;
-            case '-' : return first - second;
-            default : {
-                char op;
-                Scanner sc = new Scanner(System.in);
-                do {
-                    System.out.println("Invalid operator given");
-                    System.out.println("Choose one from following operators : + - * /");
-                    System.out.print(">");
-                    op = sc.next().charAt(0);
-                } while (!isValidOperator(operators,op));
-                return calculate(first,second,op);
-            }
-        }
-    }
     public boolean isValidOperator(ArrayList<Character> operarators,char operator){
         return operarators.stream().anyMatch(op -> op == operator);
     }

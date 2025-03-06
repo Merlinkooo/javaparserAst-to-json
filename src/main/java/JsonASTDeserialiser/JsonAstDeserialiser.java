@@ -80,7 +80,7 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
 
 
             methodJson.put("body",n.getBody().isPresent() ? this.visit(n.getBody().get(),null) : NullNode.getInstance());
-
+            methodJson.put("virtualit","yes");
 
             return methodJson;
     }
@@ -635,13 +635,18 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
     }
     //Class or Interface types are represented in ASTFRI as IndirectionType,so as a result we want
     //IndirectionType , which is pointing to ClassOrInterface type
-    // with one exception,and that is when this ClassType is used in context of ObjecCreationExpr-in this case
+    // with two exceptions,and thhose are when this ClassType is used in context of ObjecCreationExpr or when
+    // this node is used in context of inheritance/implements-in this cases
     //we want this type to be represented as UserType,to recognise this context we check if parent node
-    //is ObjectCreationExpr,and depending on result of this check we apply different logic
+    //is ObjectCreationExpr or ClassOrInterfaceDeclaration,and depending on result of this check we apply different logic
     @Override
     public JsonNode visit(ClassOrInterfaceType n, JsonNode arg) {
         ObjectNode classTypeJson = this.objectMapper.createObjectNode();
-        if(n.getParentNode().isPresent() && n.getParentNode().get() instanceof ObjectCreationExpr) {
+
+        var parent = n.getParentNode();
+
+        if(parent.isPresent() && (parent.get() instanceof ObjectCreationExpr ||
+                                    parent.get() instanceof ClassOrInterfaceDeclaration)) {
 
             classTypeJson.put("node", "User");
             classTypeJson.put("name", n.getNameAsString());
@@ -660,47 +665,75 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
 
     @Override
     public JsonNode visit(ClassOrInterfaceDeclaration n, JsonNode arg) {
-        //return super.visit(n, arg);
         ObjectNode classOrInterfDeclJson = objectMapper.createObjectNode();
-        classOrInterfDeclJson.put("node","ClassDefStmt");
 
-        classOrInterfDeclJson.put("name",n.getNameAsString());
+        //check if this node is interface-different logic apply for class and interface
+        if (n.isInterface()){
+            classOrInterfDeclJson.put("node","InterfaceDefStmt");
+            classOrInterfDeclJson.put("name", n.getNameAsString());
+
+            ArrayNode methods = this.objectMapper.createArrayNode();
+            classOrInterfDeclJson.put("methods", methods);
+            n.getMethods().forEach(m -> methods.add(visit(m, null)));
+
+            ArrayNode generic_params = objectMapper.createArrayNode();
+            classOrInterfDeclJson.put("generic_parameters", generic_params);
+
+            n.getTypeParameters().forEach(gen_param -> {
+
+                generic_params.add(this.visit(gen_param, null));
+            });
+
+            ArrayNode bases = this.objectMapper.createArrayNode();
+            classOrInterfDeclJson.put("bases",bases);
+
+            n.getExtendedTypes().forEach(type -> {
+
+            });
+
+
+
+            return classOrInterfDeclJson;
+        }else {
+            classOrInterfDeclJson.put("node","ClassDefStmt");
+            classOrInterfDeclJson.put("name", n.getNameAsString());
         /*
         ArrayNode modifiers = objectMapper.createArrayNode();
         classOrInterfDeclJson.put("modifiers",modifiers);
         n.getModifiers().forEach(mod -> modifiers.add(this.visit(mod,null)));*/
 
-        ArrayNode attributes = objectMapper.createArrayNode();
-        classOrInterfDeclJson.put("attributes",attributes);
-        n.getFields().forEach(field -> {
-            this.createVarDefStmts(field,"Member").forEach(var ->{
-                //We are only interested in access modifiers and we assume that access mod is first
-                var.put("acces", field.getModifiers().isEmpty() ?
-                        TextNode.valueOf("internal") : this.visit(field.getModifiers().get(0),null));
-                attributes.add(var);
+            ArrayNode attributes = objectMapper.createArrayNode();
+            classOrInterfDeclJson.put("attributes", attributes);
+            n.getFields().forEach(field -> {
+                this.createVarDefStmts(field, "Member").forEach(var -> {
+                    //We are only interested in access modifiers and we assume that access mod is first
+                    var.put("acces", field.getModifiers().isEmpty() ?
+                            TextNode.valueOf("internal") : this.visit(field.getModifiers().get(0), null));
+                    attributes.add(var);
+
+                });
 
             });
+            //part for constructors
+            ArrayNode constructors = this.objectMapper.createArrayNode();
+            classOrInterfDeclJson.put("constructors", constructors);
+            n.getConstructors().forEach(constr -> constructors.add(this.visit(constr, null)));
 
-        });
-        //part for constructors
-        ArrayNode constructors = this.objectMapper.createArrayNode();
-        classOrInterfDeclJson.put("constructors",constructors);
-        n.getConstructors().forEach(constr -> constructors.add(this.visit(constr,null)));
+            classOrInterfDeclJson.put("destructor", NullNode.getInstance());
 
-        classOrInterfDeclJson.put("destructor",NullNode.getInstance());
+            ArrayNode methods = objectMapper.createArrayNode();
+            classOrInterfDeclJson.put("methods", methods);
+            n.getMethods().forEach(m -> methods.add(visit(m, null)));
 
-        ArrayNode methods = objectMapper.createArrayNode();
-        classOrInterfDeclJson.put("methods",methods);
-        n.getMethods().forEach(m -> methods.add(visit(m,null)));
+            ArrayNode generic_params = objectMapper.createArrayNode();
+            classOrInterfDeclJson.put("generic_parameters", generic_params);
 
-        ArrayNode generic_params = objectMapper.createArrayNode();
-        classOrInterfDeclJson.put("generic_parameters",generic_params);
+            n.getTypeParameters().forEach(gen_param -> {
 
-        n.getTypeParameters().forEach(gen_param -> {
-
-            generic_params.add(this.visit(gen_param,null));
-        });
-        return classOrInterfDeclJson;
+                generic_params.add(this.visit(gen_param, null));
+            });
+            return classOrInterfDeclJson;
+        }
     }
 
 
