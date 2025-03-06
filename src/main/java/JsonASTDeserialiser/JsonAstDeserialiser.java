@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.node.*;
+import com.github.javaparser.ast.AccessSpecifier;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.Node;
@@ -65,11 +66,10 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
 
             methodJson.put("name",n.getName().asString());
 
-            //We are only interested in access modifier,should be first one
-            // if there is no modifier,count it s internal=default,if there are 1 and more
-            //modifiers visit first modifier
-            methodJson.put("access",n.getModifiers().size() == 0 ?
-                    TextNode.valueOf("internal") : this.visit(n.getModifiers().get(0),null));
+
+            var accessSpecifier =  n.getAccessSpecifier();
+            methodJson.put("access",accessSpecifier == AccessSpecifier.NONE ? "internal" :
+                                                                        accessSpecifier.asString());
 
             ArrayNode parameters = this.objectMapper.createArrayNode();
             methodJson.put("parameters",parameters);
@@ -80,7 +80,7 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
 
 
             methodJson.put("body",n.getBody().isPresent() ? this.visit(n.getBody().get(),null) : NullNode.getInstance());
-            methodJson.put("virtualit","yes");
+            methodJson.put("virtuality","yes");
 
             return methodJson;
     }
