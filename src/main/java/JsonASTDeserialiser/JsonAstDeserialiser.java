@@ -287,7 +287,21 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
         compUnitJson.put("node","TranslationUnit");
         ArrayNode classes = this.objectMapper.createArrayNode();
         compUnitJson.put("classes",classes);
-        //we are only interested in ClassOrInterfaceDeclarations
+        //we are only interested in ClassOrInterfaceDeclarations-what exact case it is resolved in
+        // ClassOrInterfaceDeclaration method itself
+        n.getChildNodes().forEach( node ->
+                {
+                    if(node instanceof ClassOrInterfaceDeclaration){
+                        ClassOrInterfaceDeclaration classNode = (ClassOrInterfaceDeclaration)node;
+                        classes.add(this.visit(classNode,null));
+                    }
+                }
+        );
+
+        ArrayNode interfaces = this.objectMapper.createArrayNode();
+        compUnitJson.put("interfaces",classes);
+        //we are only interested in ClassOrInterfaceDeclarations-what exact case it is resolved in
+        // ClassOrInterfaceDeclaration method itself
         n.getChildNodes().forEach( node ->
                 {
                     if(node instanceof ClassOrInterfaceDeclaration){
