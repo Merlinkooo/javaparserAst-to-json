@@ -22,6 +22,7 @@ import com.github.javaparser.ast.stmt.*;
 import com.github.javaparser.ast.type.*;
 import com.github.javaparser.ast.visitor.GenericVisitorAdapter;
 import com.github.javaparser.resolution.model.SymbolReference;
+import com.github.javaparser.utils.SourceRoot;
 
 import javax.naming.Name;
 import javax.swing.plaf.IconUIResource;
@@ -282,42 +283,57 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
 
     }
 
+    //If second parameter is not null ,it determines that multiple source files were parsed and different
+    //logic is applied in this method
     @Override
     public JsonNode visit(CompilationUnit n, JsonNode arg) {
-        ObjectNode compUnitJson = this.objectMapper.createObjectNode();
-        compUnitJson.put("node","TranslationUnit");
-        ArrayNode classes = this.objectMapper.createArrayNode();
-        compUnitJson.put("classes",classes);
-        //we are only interested in ClassOrInterfaceDeclarations-what exact case it is resolved in
-        // ClassOrInterfaceDeclaration method itself
-        n.getChildNodes().forEach( node ->
-                {
-                    if(node instanceof ClassOrInterfaceDeclaration){
-                        ClassOrInterfaceDeclaration classNode = (ClassOrInterfaceDeclaration)node;
-                        classes.add(this.visit(classNode,null));
+        if (arg == null) {
+            ObjectNode compUnitJson = this.objectMapper.createObjectNode();
+            compUnitJson.put("node", "TranslationUnit");
+            ArrayNode classes = this.objectMapper.createArrayNode();
+            compUnitJson.put("classes", classes);
+            //we are only interested in ClassOrInterfaceDeclarations-what exact case it is resolved in
+            // ClassOrInterfaceDeclaration method itself
+            n.getChildNodes().forEach(node ->
+                    {
+                        if (node instanceof ClassOrInterfaceDeclaration) {
+                            ClassOrInterfaceDeclaration classNode = (ClassOrInterfaceDeclaration) node;
+                            classes.add(this.visit(classNode, null));
+                        }
                     }
-                }
-        );
+            );
 
-        ArrayNode interfaces = this.objectMapper.createArrayNode();
-        compUnitJson.put("interfaces",interfaces);
-        //we are only interested in ClassOrInterfaceDeclarations-what exact case it is resolved in
-        // ClassOrInterfaceDeclaration method itself
-        n.getChildNodes().forEach( node ->
-                {
-                    if(node instanceof ClassOrInterfaceDeclaration){
-                        ClassOrInterfaceDeclaration classNode = (ClassOrInterfaceDeclaration)node;
-                        if(classNode.isInterface())
-                        interfaces.add(this.visit(classNode,null));
+            ArrayNode interfaces = this.objectMapper.createArrayNode();
+            compUnitJson.put("interfaces", interfaces);
+            //we are only interested in ClassOrInterfaceDeclarations-what exact case it is resolved in
+            // ClassOrInterfaceDeclaration method itself
+            n.getChildNodes().forEach(node ->
+                    {
+                        if (node instanceof ClassOrInterfaceDeclaration) {
+                            ClassOrInterfaceDeclaration classNode = (ClassOrInterfaceDeclaration) node;
+                            if (classNode.isInterface())
+                                interfaces.add(this.visit(classNode, null));
+                        }
                     }
-                }
-        );
+            );
 
-        compUnitJson.put("functions",this.objectMapper.createArrayNode());
-        compUnitJson.put("globals",this.objectMapper.createArrayNode());
-        return compUnitJson;
+            compUnitJson.put("functions", this.objectMapper.createArrayNode());
+            compUnitJson.put("globals", this.objectMapper.createArrayNode());
+            return compUnitJson;
+        }
+        ArrayNode classes = (ArrayNode) arg.get("classes");
+        n.findAll(ClassOrInterfaceDeclaration.class).forEach(classOrInterfaceDeclaration -> {
+            if (!classOrInterfaceDeclaration.isInterface())
+            classes.add(this.visit(classOrInterfaceDeclaration,null));
+        });
+
+        ArrayNode interfaces = (ArrayNode) arg.get("interfaces");
+        n.findAll(ClassOrInterfaceDeclaration.class).forEach(classOrInterfaceDeclaration -> {
+            if (classOrInterfaceDeclaration.isInterface())
+                interfaces.add(this.visit(classOrInterfaceDeclaration,null));
+        });
+        return arg;
     }
-
     @Override
     public JsonNode visit(ForStmt n, JsonNode arg) {
         ObjectNode forStmtJson = this.objectMapper.createObjectNode();
@@ -964,6 +980,7 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
 
     }
 
+
     public String convertToJson(final Node node){
         JsonNode jsonRepresentation = node.accept(this,null);
 
@@ -980,6 +997,33 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
             return null;
         }
 
+    }
+    //this method is created in order to make it possible to create one Compilation unit representation of whole
+    //directory ,the root node of ASTFRI library is Translation Unit,so we want to create logic for representation
+    //of whole parsed directory,which consists of multiple Compilation units as one CompilationUnit
+    public String convertToJson(SourceRoot sourceRoot){
+        ObjectNode jsonRepresentationSourceRoot = this.objectMapper.createObjectNode();
+        jsonRepresentationSourceRoot.put("node","TranslationUnit");
+        jsonRepresentationSourceRoot.set("classes",this.objectMapper.createArrayNode());
+        jsonRepresentationSourceRoot.set("interfaces",this.objectMapper.createArrayNode());
+        jsonRepresentationSourceRoot.set("functions",this.objectMapper.createArrayNode());
+        jsonRepresentationSourceRoot.set("globals",this.objectMapper.createArrayNode());
+
+        sourceRoot.getCompilationUnits().forEach(cu ->{
+            this.visit(cu,jsonRepresentationSourceRoot);
+        });
+        try{
+            DefaultPrettyPrinter printer = new DefaultPrettyPrinter();
+            printer.indentArraysWith(DefaultPrettyPrinter.NopIndenter.instance);
+            ObjectWriter writer = objectMapper.writer(printer);
+
+
+            return writer.writeValueAsString(jsonRepresentationSourceRoot);
+
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
     private <T extends NodeWithVariables<?>> List<ObjectNode> createVarDefStmts(T expr,String type) {
         List<ObjectNode> varDefstmts = new ArrayList<>();
