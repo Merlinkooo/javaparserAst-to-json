@@ -38,7 +38,8 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
     private ObjectMapper objectMapper = new ObjectMapper();
     private ReferenceTypeResolver referenceTypeResolver;
     private Map<String,ObjectNode> localVardDefStmts = new HashMap<>();
-    private ObjectNode lasBlockStmtJson = null;
+    private NodeCreator synteticNodeCreator = new NodeCreator(this.objectMapper);
+    private BlockStmt lasBlockStmtJson = null;
     public JsonAstDeserialiser(File file) {
         this.referenceTypeResolver = new ReferenceTypeResolver(this.objectMapper,file);
     }
@@ -299,14 +300,15 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
         );
 
         ArrayNode interfaces = this.objectMapper.createArrayNode();
-        compUnitJson.put("interfaces",classes);
+        compUnitJson.put("interfaces",interfaces);
         //we are only interested in ClassOrInterfaceDeclarations-what exact case it is resolved in
         // ClassOrInterfaceDeclaration method itself
         n.getChildNodes().forEach( node ->
                 {
                     if(node instanceof ClassOrInterfaceDeclaration){
                         ClassOrInterfaceDeclaration classNode = (ClassOrInterfaceDeclaration)node;
-                        classes.add(this.visit(classNode,null));
+                        if(classNode.isInterface())
+                        interfaces.add(this.visit(classNode,null));
                     }
                 }
         );
@@ -657,7 +659,6 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
     @Override
     public JsonNode visit(ClassOrInterfaceType n, JsonNode arg) {
         ObjectNode classTypeJson = this.objectMapper.createObjectNode();
-
         var parent = n.getParentNode();
 
         if(parent.isPresent() && (parent.get() instanceof ObjectCreationExpr ||
@@ -703,7 +704,7 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
             classOrInterfDeclJson.put("bases",bases);
 
             n.getExtendedTypes().forEach(type -> {
-
+                bases.add(this.synteticNodeCreator.createInterfaceDefStmt(type));
             });
 
 
@@ -736,7 +737,8 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
             classOrInterfDeclJson.put("constructors", constructors);
             n.getConstructors().forEach(constr -> constructors.add(this.visit(constr, null)));
 
-            classOrInterfDeclJson.put("destructor", NullNode.getInstance());
+
+            classOrInterfDeclJson.put("destructors", this.objectMapper.createArrayNode());
 
             ArrayNode methods = objectMapper.createArrayNode();
             classOrInterfDeclJson.put("methods", methods);
@@ -749,6 +751,17 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
 
                 generic_params.add(this.visit(gen_param, null));
             });
+
+            ArrayNode interfaces = this.objectMapper.createArrayNode();
+            classOrInterfDeclJson.set("interfaces",interfaces);
+            n.getImplementedTypes().forEach(type ->
+                    interfaces.add(this.synteticNodeCreator.createInterfaceDefStmt(type)));
+
+            ArrayNode bases = this.objectMapper.createArrayNode();
+            classOrInterfDeclJson.set("bases",bases);
+            n.getExtendedTypes().forEach(type ->
+                    this.synteticNodeCreator.createClassDefStmt(type));
+
             return classOrInterfDeclJson;
         }
     }
