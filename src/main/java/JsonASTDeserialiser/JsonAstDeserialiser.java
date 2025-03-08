@@ -219,23 +219,11 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
     public JsonNode visit(WhileStmt n, JsonNode arg) {
         ObjectNode whileStmtJson = this.objectMapper.createObjectNode();
         whileStmtJson.put("node","WhileStmt");
-        whileStmtJson.put("condition",n.getCondition().accept(this,null));
+        whileStmtJson.set("condition",n.getCondition().accept(this,null));
 
-        //Need to check if in body is different statement from BlockStmt,if there is somethin different
-        //create virtual BlockStmt,ASTFRI -requires in body part CompoundStmt-BlockStmt
-        Statement body = n.getBody();
-        if (body instanceof BlockStmt){
-            whileStmtJson.put("body",body.accept(this,null));
-        } else {
-            //Create virtual BlockStmt
-            ObjectNode blockStmtJson = this.objectMapper.createObjectNode();
-            blockStmtJson.put("node","CompoundStmt");
-            ArrayNode statements = objectMapper.createArrayNode();
-            blockStmtJson.put("statements",statements);
-            statements.add(body.accept(this,null));
 
-            whileStmtJson.put("body",blockStmtJson);
-        }
+        whileStmtJson.set("body",n.getBody().accept(this,null));
+
 
 
         return whileStmtJson;
@@ -259,24 +247,10 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
     public JsonNode visit(DoStmt n, JsonNode arg) {
         ObjectNode doStmtJson = this.objectMapper.createObjectNode();
         doStmtJson.put("node","DoWhileStmt");
-        doStmtJson.put("condition",n.getCondition().accept(this,null));
-
-
-        //Need to check if in body is different statement from BlockStmt,if there is somethin different
-        //create virtual BlockStmt,ASTFRI -requires in body part CompoundStmt-BlockStmt
+        doStmtJson.set("condition",n.getCondition().accept(this,null));
         Statement body = n.getBody();
-        if (body instanceof BlockStmt){
-            doStmtJson.put("body",body.accept(this,null));
-        } else {
-            //Create virtual BlockStmt
-            ObjectNode blockStmtJson = this.objectMapper.createObjectNode();
-            blockStmtJson.put("node","CompoundStmt");
-            ArrayNode statements = objectMapper.createArrayNode();
-            blockStmtJson.put("statements",statements);
-            statements.add(body.accept(this,null));
+        doStmtJson.set("body",body.accept(this,null));
 
-            doStmtJson.put("body",blockStmtJson);
-        }
 
 
         return doStmtJson;
@@ -387,21 +361,7 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
             forStmtJson.put("step", exprStmtJson);
         }
 
-        //Body part
-        // we need create virtual BlockStmt,if there is some different node than BlockStmt,look at the ASTFRI-
-        //requires CompoundStmt-BlockStmt
-        if (n.getBody() instanceof BlockStmt){
-            forStmtJson.put("body",n.getBody().accept(this,null));
-        }else {
-            //Create virtual BlockStmt
-            ObjectNode blockStmtJson = this.objectMapper.createObjectNode();
-            blockStmtJson.put("node","CompoundStmt");
-            ArrayNode statements = objectMapper.createArrayNode();
-            blockStmtJson.put("statements",statements);
-            statements.add(n.getBody().accept(this,null));
-
-            forStmtJson.put("body",blockStmtJson);
-        }
+        forStmtJson.set("body",n.getBody().accept(this,null));
 
         return forStmtJson;
     }
