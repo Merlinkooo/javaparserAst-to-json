@@ -7,7 +7,7 @@ import java.util.Arrays;
 import java.util.Scanner;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class Example<T extends Number> extends ExampleParent{
+public class Example<T extends Number> extends ExampleParent implements Comparable<Example<T>>{
     private int number;
     private String text;
 
@@ -75,5 +75,12 @@ public class Example<T extends Number> extends ExampleParent{
 
     public String getText() {
         return text;
+    }
+
+    @Override
+    public int compareTo(Example<T> o) {
+        if(number > o.number) return 1;
+        if (number < o.number) return -1;
+        return 0;
     }
 }

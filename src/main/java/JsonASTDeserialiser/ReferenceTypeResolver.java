@@ -1,5 +1,6 @@
 package JsonASTDeserialiser;
 
+import Referencies.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.Node;
@@ -7,7 +8,6 @@ import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.expr.NameExpr;
-import com.github.javaparser.ast.expr.ThisExpr;
 import com.github.javaparser.resolution.TypeSolver;
 import com.github.javaparser.resolution.UnsolvedSymbolException;
 import com.github.javaparser.resolution.types.ResolvedType;
@@ -42,7 +42,7 @@ public class ReferenceTypeResolver {
 
     /*Returns Reference if there is some match
     * */
-    public Reference determineReferenceType(NameExpr name) {
+    public ReferenceExpression determineReferenceType(NameExpr name) {
         //if (name instanceof ThisExpr) return new Reference(Reference.ReferenceType.THIS_REFERENCE,"this",this.objectMapper);
 
         //Tries ty find the nearest anncestor for node of type either MethodDecalaration or ConstructorDecl
@@ -56,12 +56,12 @@ public class ReferenceTypeResolver {
 
             //Tries to find out if name of parameter of method or constructor declaration matches with name
             if (methodOrConstructor.findAll(Parameter.class).stream().anyMatch(p -> p.getNameAsString().equals(name.toString()))) {
-                return new Reference(Reference.ReferenceType.PARAM_REFERENCE, name.toString());
+                return new ParamVarRefExpr(name.getNameAsString());
             }
 
             // Tries to find out if nameExpr is equal to name one of the local variables
             if (methodOrConstructor.findAll(VariableDeclarator.class).stream().anyMatch(v -> v.getNameAsString().equals(name.toString()))) {
-                return new Reference(Reference.ReferenceType.LOCAL_VAR_REFERENCE, name.toString());
+                return new LocalVarRefExpr(name.getNameAsString());
             }
         }
 
@@ -72,17 +72,17 @@ public class ReferenceTypeResolver {
                     .flatMap(field -> field.getVariables().stream())
                     .anyMatch(v -> v.getNameAsString().equals(name.toString()))) {
 
-                return new Reference(Reference.ReferenceType.MEMBER_VAR_REFERENCE, name.toString());
+                return new MemberVarRefExpr(name.getNameAsString(), ThisExpr.getInstance());
             }
         }
         //If there was no match with names till this point ,we can assume nameExpr given is name of class
-        return new Reference(Reference.ReferenceType.CLASS_REFERENCE,name.toString());
+        return new ClassRefExpr(name.getNameAsString());
     }
 
-    public Optional<Reference> resolveMethodOwner(MethodCallExpr callExpr){
+    public Optional<ReferenceExpression> resolveMethodOwner(MethodCallExpr callExpr){
         Optional<ClassOrInterfaceDeclaration> classDecl = callExpr.findAncestor(ClassOrInterfaceDeclaration.class);
         boolean isStatic = false;
-        Reference ref = null;
+        ReferenceExpression ref = null;
         //find method with same name as methodCallExpr and figure out,if this method has static keyword among
         //modifiers
         if (classDecl.isPresent()) {
@@ -105,11 +105,9 @@ public class ReferenceTypeResolver {
                     }
 
                     if (isStatic) {
-                        ref = new Reference(Reference.ReferenceType.CLASS_REFERENCE,
-                                classDecl.get().getNameAsString());
+                        ref = new ClassRefExpr(classDecl.get().getNameAsString());
                     } else {
-                        ref = new Reference(Reference.ReferenceType.THIS_REFERENCE,
-                                classDecl.get().getNameAsString());
+                        ref = ThisExpr.getInstance();
                     }
                     break;
 

@@ -1,17 +1,19 @@
 package JsonASTDeserialiser;
 
 
+import Referencies.ReferenceExpression;
+
 import java.util.Map;
 import java.util.Optional;
 
 public class ReferenceContainer {
-    private Map<String,Reference> references;
+    private Map<String, ReferenceExpression> references;
 
-    public void put(String name,Reference refType){
-        this.references.put(name,refType);
+    public void put(String name,ReferenceExpression expression){
+        this.references.put(name,expression);
     }
 
-    public Optional<Reference> get(String name){
+    public Optional<ReferenceExpression> get(String name){
         return Optional.of(this.references.get(name));
     }
 }
