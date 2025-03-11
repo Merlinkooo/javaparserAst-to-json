@@ -3,29 +3,32 @@ package com.github.ast_to_json;
 import JsonASTDeserialiser.JsonAstDeserialiser;
 import com.github.javaparser.ParserConfiguration;
 import com.github.javaparser.StaticJavaParser;
+import com.github.javaparser.symbolsolver.JavaSymbolSolver;
+import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSolver;
+import com.github.javaparser.symbolsolver.resolution.typesolvers.JavaParserTypeSolver;
+import com.github.javaparser.symbolsolver.resolution.typesolvers.ReflectionTypeSolver;
 import com.github.javaparser.utils.SourceRoot;
 
 import java.io.*;
 import java.nio.file.Paths;
 
 public class Test {
-    private static int cislo=10;
+
     public static void main(String[] args) throws IOException {
 
-        /*
+        File file = new File("src/main/java/examples");
+
         CombinedTypeSolver typeSolver = new CombinedTypeSolver();
-        typeSolver.add(new ReflectionTypeSolver()); // Použije reflexiu pre bežné Java triedy
-        typeSolver.add(new JavaParserTypeSolver(new File("src"))); // Analyzuje lokálny kód
+        typeSolver.add(new ReflectionTypeSolver());
+        typeSolver.add(new JavaParserTypeSolver(file));
 
 
         JavaSymbolSolver symbolSolver = new JavaSymbolSolver(typeSolver);
-        StaticJavaParser.getConfiguration().putSymbolResolver(symbolSolver);*/
-        //JsonAstDeserialiser visitor = new JsonAstDeserialiser("src/main/java/examples/ReversePolishNotation.java");
-        File file = new File("src/main/java/examples");
+
 
         ParserConfiguration conf = new ParserConfiguration();
         conf.setLanguageLevel(ParserConfiguration.LanguageLevel.JAVA_21);
-        StaticJavaParser.setConfiguration(conf);
+        conf.setSymbolResolver(symbolSolver);
 
 
         SourceRoot sourceRoot=new SourceRoot(Paths.get("src/main/java/examples"),conf);

@@ -23,6 +23,7 @@ import com.github.javaparser.ast.type.*;
 import com.github.javaparser.ast.visitor.GenericVisitorAdapter;
 import com.github.javaparser.resolution.model.SymbolReference;
 import com.github.javaparser.utils.SourceRoot;
+import com.github.javaparser.utils.ProjectRoot;
 
 import javax.naming.Name;
 import javax.swing.plaf.IconUIResource;
@@ -33,6 +34,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 
 public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode> {
@@ -640,13 +642,11 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
     public JsonNode visit(ClassOrInterfaceType n, JsonNode arg) {
         ObjectNode classTypeJson = this.objectMapper.createObjectNode();
         var parent = n.getParentNode();
-
         if(parent.isPresent() && (parent.get() instanceof ObjectCreationExpr ||
                                     parent.get() instanceof ClassOrInterfaceDeclaration)) {
 
             classTypeJson.put("node", "UserType");
-            classTypeJson.put("name", n.getNameAsString());
-
+            classTypeJson.put("name",n.getNameAsString());
         }else {
 
             classTypeJson.put("node", "IndirectionType");
@@ -662,7 +662,6 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
     @Override
     public JsonNode visit(ClassOrInterfaceDeclaration n, JsonNode arg) {
         ObjectNode classOrInterfDeclJson = objectMapper.createObjectNode();
-
         //check if this node is interface-different logic apply for class and interface
         if (n.isInterface()){
             classOrInterfDeclJson.put("node","InterfaceDefStmt");
@@ -746,7 +745,7 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
         }
     }
 
-
+/*
     @Override
     public JsonNode visit(ArrayAccessExpr n, JsonNode arg) {
          ObjectNode jsonArrAccExpr = objectMapper.createObjectNode();
@@ -754,7 +753,7 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
          n.getName().ifNameExpr( e -> jsonArrAccExpr.put("name",e.asNameExpr().toString()));
          jsonArrAccExpr.put("index",n.getIndex().asIntegerLiteralExpr().asNameExpr().toString());
          return jsonArrAccExpr;
-    }
+    }*/
 
     @Override
     public JsonNode visit(AssignExpr n, JsonNode arg) {
@@ -1001,6 +1000,33 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
             varDefstmts.add(varDefstmtJson);
         });
         return varDefstmts;
+    }
+
+    public String convertToJson(ProjectRoot projectRoot){
+        ObjectNode jsonRepresentationProjectRoot = this.objectMapper.createObjectNode();
+        jsonRepresentationProjectRoot.put("node","TranslationUnit");
+        jsonRepresentationProjectRoot.set("classes",this.objectMapper.createArrayNode());
+        jsonRepresentationProjectRoot.set("interfaces",this.objectMapper.createArrayNode());
+        jsonRepresentationProjectRoot.set("functions",this.objectMapper.createArrayNode());
+        jsonRepresentationProjectRoot.set("globals",this.objectMapper.createArrayNode());
+
+        List<SourceRoot> listSourceRoot = projectRoot.getSourceRoots();
+        listSourceRoot.stream().flatMap(sourceRoot -> {
+           return  sourceRoot.getCompilationUnits().stream();
+        }).forEach(compilationUnit -> this.visit(compilationUnit,jsonRepresentationProjectRoot));
+
+        try{
+            DefaultPrettyPrinter printer = new DefaultPrettyPrinter();
+            printer.indentArraysWith(DefaultPrettyPrinter.NopIndenter.instance);
+            ObjectWriter writer = objectMapper.writer(printer);
+
+
+            return writer.writeValueAsString(jsonRepresentationProjectRoot);
+
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
 }
