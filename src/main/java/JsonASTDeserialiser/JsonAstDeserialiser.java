@@ -83,7 +83,8 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
             methodJson.put("return_type",n.getType().accept(this,methodJson));
 
 
-            methodJson.put("body",n.getBody().isPresent() ? this.visit(n.getBody().get(),null) : NullNode.getInstance());
+            methodJson.put("body",n.getBody().isPresent() ? this.visit(n.getBody().get(),null) :
+                                                                        NullNode.getInstance());
             methodJson.put("virtual","yes");
 
             return methodJson;
@@ -111,7 +112,7 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
         ObjectNode returnStmtJson = this.objectMapper.createObjectNode();
         returnStmtJson.put("node","ReturnStmt");
         var returnExpr = n.getExpression();
-        returnStmtJson.put("value",returnStmtJson.isEmpty() ? NullNode.getInstance() :
+        returnStmtJson.put("value",returnExpr.isEmpty() ? NullNode.getInstance() :
                 returnExpr.get().accept(this,null));
 
         return returnStmtJson;

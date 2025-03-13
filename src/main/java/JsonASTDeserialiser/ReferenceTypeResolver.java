@@ -78,15 +78,14 @@ public class ReferenceTypeResolver {
         //If there was no match with names till this point ,we can assume nameExpr given is name of class
         return new ClassRefExpr(name.getNameAsString());
     }
-
+    //To do- check number and types of parameters
     public Optional<ReferenceExpression> resolveMethodOwner(MethodCallExpr callExpr){
         Optional<ClassOrInterfaceDeclaration> classDecl = callExpr.findAncestor(ClassOrInterfaceDeclaration.class);
-        boolean isStatic = false;
+
         ReferenceExpression ref = null;
         //find method with same name as methodCallExpr and figure out,if this method has static keyword among
         //modifiers
-        if (classDecl.isPresent()) {
-
+        if(classDecl.isPresent()){
             var methods = classDecl.get().getMethods();
 
             //seach for method declaration  with same as method call expr in parameter and then search
@@ -95,16 +94,7 @@ public class ReferenceTypeResolver {
                 var method = methods.get(i);
                 if (method.getName().asString().equals(callExpr.getNameAsString())) {
 
-                    var modifiers = method.getModifiers();
-
-                    for (int j = 0; j < modifiers.size(); j++) {
-                        if (modifiers.get(j).getKeyword().asString().equals("static")) {
-                            isStatic = true;
-                            break;
-                        }
-                    }
-
-                    if (isStatic) {
+                    if (method.isStatic()) {
                         ref = new ClassRefExpr(classDecl.get().getNameAsString());
                     } else {
                         ref = ThisExpr.getInstance();
