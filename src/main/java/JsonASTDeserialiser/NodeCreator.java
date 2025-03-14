@@ -65,4 +65,10 @@ public class NodeCreator {
         interfaceDefStmt.set("bases",this.mapper.createArrayNode());
         return interfaceDefStmt;
     }
+
+    public ObjectNode createUnknownExpression(){
+        ObjectNode unknownExpr = this.mapper.createObjectNode();
+        unknownExpr.put("node","UnknownExpr");
+        return unknownExpr;
+    }
 }

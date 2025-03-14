@@ -85,7 +85,7 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
 
             methodJson.put("body",n.getBody().isPresent() ? this.visit(n.getBody().get(),null) :
                                                                         NullNode.getInstance());
-            methodJson.put("virtual","yes");
+            methodJson.put("virtual",n.isFinal() ? "no" : "yes");
 
             return methodJson;
     }
@@ -757,6 +757,44 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
     }*/
 
     @Override
+    public JsonNode visit(ArrayCreationExpr n, JsonNode arg) {
+        return this.synteticNodeCreator.createUnknownExpression();
+    }
+    //TODO
+    //ArrayAccessExpr expression is not implemented yet in ASTFRI,so implementation of this method how it actually is
+    //temporary
+    @Override
+    public JsonNode visit(ArrayAccessExpr n, JsonNode arg) {
+        return n.getName().accept(this,null);
+        //return this.synteticNodeCreator.createUnknownExpression();
+    }
+
+    @Override
+    public JsonNode visit(ArrayInitializerExpr n, JsonNode arg) {
+        return this.synteticNodeCreator.createUnknownExpression();
+    }
+
+    @Override
+    public JsonNode visit(ClassExpr n, JsonNode arg) {
+        return this.synteticNodeCreator.createUnknownExpression();
+    }
+
+    @Override
+    public JsonNode visit(InstanceOfExpr n, JsonNode arg) {
+        return this.synteticNodeCreator.createUnknownExpression();
+    }
+
+    @Override
+    public JsonNode visit(NormalAnnotationExpr n, JsonNode arg) {
+        return this.synteticNodeCreator.createUnknownExpression();
+    }
+
+    @Override
+    public JsonNode visit(TypeExpr n, JsonNode arg) {
+        return this.synteticNodeCreator.createUnknownExpression();
+    }
+
+    @Override
     public JsonNode visit(AssignExpr n, JsonNode arg) {
         ObjectNode assignExprJson = objectMapper.createObjectNode();
 
@@ -847,7 +885,18 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
     public JsonNode visit(IntegerLiteralExpr n, JsonNode arg) {
         ObjectNode intLitExprJson = objectMapper.createObjectNode();
         intLitExprJson.put("node","IntLitExpr");
-        intLitExprJson.put("value",Integer.parseInt(n.getValue()));
+        if(n.getValue().startsWith("0x")){
+            intLitExprJson.put("value",Integer.parseInt(n.getValue().substring(2),16));
+        }else if (n.getValue().startsWith("O")){
+            intLitExprJson.put("value",Integer.parseInt(n.getValue().substring(1),8));
+        }else if(n.getValue().startsWith("0b")){
+            intLitExprJson.put("value",Integer.parseInt(n.getValue().substring(2),2));
+        }else{
+            intLitExprJson.put("value",Integer.parseInt(n.getValue()));
+        }
+
+
+
         return intLitExprJson;
     }
 
@@ -935,6 +984,15 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
 
         methodCallExprJson.put("arguments",arguments);
         return methodCallExprJson;
+    }
+
+    //TODO
+    //Cast expression is not implemented yet in ASTFRI,so implementation of this method how it actually is
+    // temporary
+    @Override
+    public JsonNode visit(CastExpr n, JsonNode arg) {
+        return n.getExpression().accept(this,null);
+        //return synteticNodeCreator.createUnknownExpression();
     }
 
     @Override

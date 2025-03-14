@@ -82,7 +82,7 @@ public class ReferenceTypeResolver {
     public Optional<ReferenceExpression> resolveMethodOwner(MethodCallExpr callExpr){
         Optional<ClassOrInterfaceDeclaration> classDecl = callExpr.findAncestor(ClassOrInterfaceDeclaration.class);
 
-        ReferenceExpression ref = null;
+
         //find method with same name as methodCallExpr and figure out,if this method has static keyword among
         //modifiers
         if(classDecl.isPresent()){
@@ -95,17 +95,17 @@ public class ReferenceTypeResolver {
                 if (method.getName().asString().equals(callExpr.getNameAsString())) {
 
                     if (method.isStatic()) {
-                        ref = new ClassRefExpr(classDecl.get().getNameAsString());
+                        return Optional.of(new ClassRefExpr(classDecl.get().getNameAsString()));
                     } else {
-                        ref = ThisExpr.getInstance();
+                        return Optional.of(ThisExpr.getInstance());
                     }
-                    break;
+
 
                 }
             }
 
 
         }
-        return Optional.of(ref);
+        return Optional.empty();
     }
 }
