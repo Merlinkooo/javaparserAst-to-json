@@ -70,10 +70,22 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
 
             methodJson.put("name",n.getName().asString());
 
-
             var accessSpecifier =  n.getAccessSpecifier();
-            methodJson.put("access",accessSpecifier == AccessSpecifier.NONE ? "internal" :
-                                                                        accessSpecifier.asString());
+            //If method is declared within interface,access modifier is public,despite methods itself dont have
+            //access specifier
+            if (n.getParentNode().isPresent()){
+                ClassOrInterfaceDeclaration classDeclaration = (ClassOrInterfaceDeclaration) n.getParentNode().get();
+                if(classDeclaration.isInterface()){
+                    methodJson.put("access","public");
+                }else{
+                    methodJson.put("access", accessSpecifier == AccessSpecifier.NONE ? "internal" :
+                            accessSpecifier.asString());
+                }
+            }else {
+
+                methodJson.put("access", accessSpecifier == AccessSpecifier.NONE ? "internal" :
+                        accessSpecifier.asString());
+            }
 
             ArrayNode parameters = this.objectMapper.createArrayNode();
             methodJson.put("parameters",parameters);
@@ -450,11 +462,22 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
         return constructorDefStmtJson;
     }
 
+    //TODO
+    //This method will be changed,this implementation is only for testing purposes,ASTFRI doesnt have TryStmt yet
     @Override
     public JsonNode visit(TryStmt n, JsonNode arg) {
-        return super.visit(n, arg);
+        ObjectNode tryStmtJson= this.objectMapper.createObjectNode();
+        tryStmtJson.put("node","CompoundStmt");
+        ArrayNode statements = this.objectMapper.createArrayNode();
+        tryStmtJson.put("statements",statements);
+        n.getTryBlock().getStatements().forEach(stmt -> statements.add(stmt.accept(this,null)));
+        n.getCatchClauses().stream().forEach(catchClause -> catchClause.getBody().
+                getStatements().forEach(stmt -> statements.add(stmt.accept(this,null))));
+        return tryStmtJson;
 
     }
+
+
 
     // Equivalent for NewExpr in ASTFri
     @Override
