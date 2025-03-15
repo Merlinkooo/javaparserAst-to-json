@@ -10,6 +10,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.node.*;
+import com.github.javaparser.StaticJavaParser;
+import com.github.javaparser.ast.type.*;
 import com.github.javaparser.ast.AccessSpecifier;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Modifier;
@@ -18,8 +20,12 @@ import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.expr.*;
 import com.github.javaparser.ast.nodeTypes.NodeWithVariables;
 import com.github.javaparser.ast.stmt.*;
-import com.github.javaparser.ast.type.*;
+
 import com.github.javaparser.ast.visitor.GenericVisitorAdapter;
+import com.github.javaparser.resolution.TypeSolver;
+import com.github.javaparser.resolution.types.ResolvedType;
+import com.github.javaparser.symbolsolver.JavaSymbolSolver;
+import com.github.javaparser.symbolsolver.javaparsermodel.JavaParserFacade;
 import com.github.javaparser.utils.SourceRoot;
 import com.github.javaparser.utils.ProjectRoot;
 
@@ -36,9 +42,11 @@ public class JsonAstSerialiser extends GenericVisitorAdapter<JsonNode,JsonNode> 
     private Map<String,VariableDeclarator> attributes = new HashMap<>();
 
     private NodeCreator synteticNodeCreator = new NodeCreator(this.objectMapper);
-    private BlockStmt lasBlockStmtJson = null;
+
+
     public JsonAstSerialiser(File file) {
         this.referenceTypeResolver = new ReferenceTypeResolver(this.objectMapper,file);
+
     }
 
 
@@ -125,7 +133,19 @@ public class JsonAstSerialiser extends GenericVisitorAdapter<JsonNode,JsonNode> 
         lambdaExprJson.put("node","LambdaExpr");
         ArrayNode params = objectMapper.createArrayNode();
         lambdaExprJson.put("params",params);
-        n.getParameters().forEach(param -> params.add(this.visit(param,null)));
+
+        n.getParameters().forEach(param -> {
+            if (param.getType().isUnknownType()){
+                try {
+                    ResolvedType resolvedType = param.resolve().getType();
+                    String[] description = resolvedType.describe().split("\\.");
+                    param.setType(description[description.length -1]);
+                } catch (Exception e) {
+
+                }
+            }
+            params.add(this.visit(param,null));
+        });
         lambdaExprJson.put("body",n.getBody().accept(this,null));
 
         //remove parameters of lambda from hashmap,they are no more accessible at this point
@@ -615,7 +635,8 @@ public class JsonAstSerialiser extends GenericVisitorAdapter<JsonNode,JsonNode> 
 
     @Override
     public JsonNode visit(Parameter n, JsonNode arg) {
-            ObjectNode parameterNodeJson = objectMapper.createObjectNode();
+
+        ObjectNode parameterNodeJson = objectMapper.createObjectNode();
                 parameterNodeJson.put("node","ParamVarDefStmt");
                 parameterNodeJson.put("name",n.getNameAsString());
                 parameterNodeJson.put("type",n.getType().accept(this,null));

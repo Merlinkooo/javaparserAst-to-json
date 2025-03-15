@@ -37,26 +37,23 @@ public class Main {
         conf.setLanguageLevel(ParserConfiguration.LanguageLevel.JAVA_21);
         conf.setSymbolResolver(symbolSolver);
 
-        JavaParser parser = new JavaParser(conf);
-        JsonAstSerialiser deserialiser = new JsonAstSerialiser(sourceFile);
+        StaticJavaParser.setConfiguration(conf);
+
+        JsonAstSerialiser serialiser = new JsonAstSerialiser(sourceFile);
         Path path = Paths.get(sourceFile.getPath());
 
         String jsonFormat="";
         switch (args[0]){
             case "-f":{
-                ParseResult<CompilationUnit> result = parser.parse(sourceFile);
-                if(result.isSuccessful()){
-                    jsonFormat =  deserialiser.convertToJson(result.getResult().get());
-                }else{
-                    result.getProblems().forEach(problem -> problem.toString());
-                }
+                CompilationUnit result = StaticJavaParser.parse(sourceFile);
+                serialiser.convertToJson(result);
                 break;
             }
             case "-d": {
                 SourceRoot sourceRoot = new SourceRoot(path,conf);
                 try {
                     sourceRoot.tryToParse();
-                    jsonFormat = deserialiser.convertToJson(sourceRoot);
+                    jsonFormat = serialiser.convertToJson(sourceRoot);
                 } catch (IOException e) {
                     System.out.println(e);
                 }
@@ -78,7 +75,7 @@ public class Main {
                     }
 
                 });
-                jsonFormat = deserialiser.convertToJson(projectRoot);
+                jsonFormat = serialiser.convertToJson(projectRoot);
             }
         }
         try(FileWriter writer = new FileWriter(outputFile)) {
