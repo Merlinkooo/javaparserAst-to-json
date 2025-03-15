@@ -26,24 +26,18 @@ import java.util.*;
 public class JsonAstSerialiser extends GenericVisitorAdapter<JsonNode,JsonNode> {
     private ObjectMapper objectMapper = new ObjectMapper();
     private ReferenceTypeResolver referenceTypeResolver;
-    private Map<String,ObjectNode> localVardDefStmts = new HashMap<>();
+
+    private Map<String,ObjectNode> localVars = new HashMap<>();
+    private Map<String,ObjectNode> parameters = new HashMap<>();
+    private Map<String,ObjectNode> attributes = new HashMap<>();
+
     private NodeCreator synteticNodeCreator = new NodeCreator(this.objectMapper);
     private BlockStmt lasBlockStmtJson = null;
     public JsonAstSerialiser(File file) {
         this.referenceTypeResolver = new ReferenceTypeResolver(this.objectMapper,file);
     }
 
-    /*
-        private <N extends Node> void addElementsToArray(ArrayNode array, List<N> elements){
-            for (Node element : elements){
-                ObjectNode jsonNode = objectMapper.createObjectNode();
-                this.visit(element,jsonNode);
-                array.add(jsonNode);
 
-            }
-        }*/
-    /*ass second argument should be ArrayNode
-    */
     @Override
     public JsonNode visit(MethodDeclaration n, JsonNode arg) {
             ObjectNode methodJson = objectMapper.createObjectNode();
@@ -57,7 +51,7 @@ public class JsonAstSerialiser extends GenericVisitorAdapter<JsonNode,JsonNode> 
             methodJson.put("name",n.getName().asString());
 
             var accessSpecifier =  n.getAccessSpecifier();
-            //If method is declared within interface,access modifier is public,despite methods itself dont have
+            //If method is declared within interface,access specifier is public,despite methods itself dont have
             //access specifier
             if (n.getParentNode().isPresent()){
                 ClassOrInterfaceDeclaration classDeclaration = (ClassOrInterfaceDeclaration) n.getParentNode().get();
@@ -87,6 +81,8 @@ public class JsonAstSerialiser extends GenericVisitorAdapter<JsonNode,JsonNode> 
 
             return methodJson;
     }
+
+
 
     // if inside of this statement is VariableDeclarationExpr,then returned Json representation will
     //be either DefStmt - if we are declaring multiple variables or LocalVarDefStmt if only one variable
@@ -344,15 +340,12 @@ public class JsonAstSerialiser extends GenericVisitorAdapter<JsonNode,JsonNode> 
 
         //Condition part
         Optional<Expression> condition = n.getCompare();
-        forStmtJson.put("condition", condition.isPresent() ?
+        forStmtJson.set("condition", condition.isPresent() ?
                                                 condition.get().accept(this,null) :
                                                 NullNode.getInstance());
 
 
         //Update part
-        //Same as with init part we take only first expression now,later it can be solved by implementing
-        //logic with BinOpExpr with comma
-
         //First check count of expressions
         if (n.getUpdate().size() == 0){
             forStmtJson.put("step", NullNode.getInstance());
@@ -360,13 +353,6 @@ public class JsonAstSerialiser extends GenericVisitorAdapter<JsonNode,JsonNode> 
             forStmtJson.set("step",(this.synteticNodeCreator.createExpressionStmt(this.synteticNodeCreator.
                     createBinOpExpr(n.getUpdate(),",",0,this))));
 
-            /*
-            //Create virtual ExpressionStmt,
-            ObjectNode exprStmtJson = this.objectMapper.createObjectNode();
-            exprStmtJson.put("node", "ExpressionStmt");
-            exprStmtJson.put("expression", n.getUpdate().get(0).accept(this, null));*/
-
-            //forStmtJson.put("step", exprStmtJson);
         }
 
         forStmtJson.set("body",n.getBody().accept(this,null));
@@ -495,7 +481,7 @@ public class JsonAstSerialiser extends GenericVisitorAdapter<JsonNode,JsonNode> 
         blockStatementJson.put("node","CompoundStmt");
         ArrayNode statements = objectMapper.createArrayNode();
         blockStatementJson.put("statements",statements);
-        this.lasBlockStmtJson = lasBlockStmtJson;
+
 
         n.getStatements().forEach(statement -> {
             //check for ExplicitConstructorInvocationStmt ,we dont want to this node to be added among
@@ -508,34 +494,7 @@ public class JsonAstSerialiser extends GenericVisitorAdapter<JsonNode,JsonNode> 
 
         return blockStatementJson;
     }
-    /*FieldDeclaration is parent Node for Variable Declarator in purpose
-   to cover cases where multiple attributes are declared  in same row like
-       int x,y
-   * */
-    /*@Override
-    public JsonNode visit(FieldDeclaration n, JsonNode arg) {
-        ObjectNode fieldDeclarationJson = objectMapper.createObjectNode();
-        fieldDeclarationJson.put("node_type","FieldDeaclaration");
 
-
-        ArrayNode variableDeclarations = objectMapper.createArrayNode();
-        fieldDeclarationJson.put("variable_declarations",variableDeclarations);
-        n.getVariables().forEach(e -> variableDeclarations.add(e.accept(this,variableDeclarations)));
-
-        ArrayNode modifiers = objectMapper.createArrayNode();
-        fieldDeclarationJson.put("modifiers",modifiers);
-        n.getModifiers().forEach(mod -> modifiers.add(mod.accept(this,null)));
-
-        return fieldDeclarationJson;
-    }*/
-    /*VariableDeclarationExpr is parent Node for Variable Declarator in purpose
-    to cover cases where multiple variables are declared in same row like
-        int x,y
-    * */
-
-    /*
-        Second parameter should be ArrayNode  property of parent Node
-     */
 
     /*This method returns either DefStmt Json object representation-if there are multiple variables declared inside ,
      *or
@@ -714,17 +673,22 @@ public class JsonAstSerialiser extends GenericVisitorAdapter<JsonNode,JsonNode> 
             classOrInterfDeclJson.put("attributes", attributes);
 
             n.getFields().forEach(field -> {
-                this.createVarDefStmts(field, "Member").forEach(variable -> {
+                field.getVariables().forEach(variableDeclarator -> {
+                ObjectNode memberVarDef = this.objectMapper.createObjectNode();
+                memberVarDef.put("node","MemberVarDefStmt");
                     var access = field.getAccessSpecifier();
 
-                    variable.put("access", access == AccessSpecifier.NONE ?
+                    memberVarDef.put("access", access == AccessSpecifier.NONE ?
                             "internal" : access.asString());
-                    attributes.add(variable);
+                    this.visit(variableDeclarator,memberVarDef);
+                    attributes.add(memberVarDef);});
 
                 });
 
-            });
-            //part for constructors
+
+
+
+                //part for constructors
             ArrayNode constructors = this.objectMapper.createArrayNode();
             classOrInterfDeclJson.put("constructors", constructors);
             n.getConstructors().forEach(constr -> constructors.add(this.visit(constr, null)));
