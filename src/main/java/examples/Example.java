@@ -56,8 +56,10 @@ public class Example<T extends Number> extends ExampleParent implements Comparab
 
     }
     public void printTextNTimes(int count){
-        for (int i = 0; i < count; i++) {
-            System.out.println(text);
+        int e;
+        int i;
+        for (e=0,i=0 ; i < count; e++,i++) {
+            System.out.println(10);
         }
     }
 

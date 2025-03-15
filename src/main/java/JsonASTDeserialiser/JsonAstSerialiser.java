@@ -1,15 +1,10 @@
 package JsonASTDeserialiser;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.node.*;
 import com.github.javaparser.ast.AccessSpecifier;
 import com.github.javaparser.ast.CompilationUnit;
@@ -21,29 +16,20 @@ import com.github.javaparser.ast.nodeTypes.NodeWithVariables;
 import com.github.javaparser.ast.stmt.*;
 import com.github.javaparser.ast.type.*;
 import com.github.javaparser.ast.visitor.GenericVisitorAdapter;
-import com.github.javaparser.resolution.model.SymbolReference;
 import com.github.javaparser.utils.SourceRoot;
 import com.github.javaparser.utils.ProjectRoot;
 
-import javax.naming.Name;
-import javax.swing.plaf.IconUIResource;
-import javax.swing.text.html.Option;
 import java.io.File;
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.util.*;
-import java.util.function.Consumer;
-import java.util.stream.Stream;
 
 
-public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode> {
+public class JsonAstSerialiser extends GenericVisitorAdapter<JsonNode,JsonNode> {
     private ObjectMapper objectMapper = new ObjectMapper();
     private ReferenceTypeResolver referenceTypeResolver;
     private Map<String,ObjectNode> localVardDefStmts = new HashMap<>();
     private NodeCreator synteticNodeCreator = new NodeCreator(this.objectMapper);
     private BlockStmt lasBlockStmtJson = null;
-    public JsonAstDeserialiser(File file) {
+    public JsonAstSerialiser(File file) {
         this.referenceTypeResolver = new ReferenceTypeResolver(this.objectMapper,file);
     }
 
@@ -347,11 +333,8 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
 
             } else {
                 //If expression inside is not VariableDeclarationExpr,create virtual ExpressionStmt
-                ObjectNode exprStmtJson = this.objectMapper.createObjectNode();
-                exprStmtJson.put("node", "ExpressionStmt");
-                exprStmtJson.put("expression", initExpr.accept(this, null));
+                forStmtJson.set("init",this.synteticNodeCreator.createExpressionStmt((ObjectNode) initExpr.accept(this,null)));
 
-                forStmtJson.put("init", exprStmtJson);
 
 
             }
@@ -372,12 +355,16 @@ public class JsonAstDeserialiser extends GenericVisitorAdapter<JsonNode,JsonNode
         if (n.getUpdate().size() == 0){
             forStmtJson.put("step", NullNode.getInstance());
         }else{
+            forStmtJson.set("step",(this.synteticNodeCreator.createExpressionStmt(this.synteticNodeCreator.
+                    createBinOpExpr(n.getUpdate(),",",0,this))));
+
+            /*
             //Create virtual ExpressionStmt,
             ObjectNode exprStmtJson = this.objectMapper.createObjectNode();
             exprStmtJson.put("node", "ExpressionStmt");
-            exprStmtJson.put("expression", n.getUpdate().get(0).accept(this, null));
+            exprStmtJson.put("expression", n.getUpdate().get(0).accept(this, null));*/
 
-            forStmtJson.put("step", exprStmtJson);
+            //forStmtJson.put("step", exprStmtJson);
         }
 
         forStmtJson.set("body",n.getBody().accept(this,null));

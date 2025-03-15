@@ -72,7 +72,7 @@ public class ReferenceTypeResolver {
                     .flatMap(field -> field.getVariables().stream())
                     .anyMatch(v -> v.getNameAsString().equals(name.toString()))) {
 
-                return new MemberVarRefExpr(name.getNameAsString(), ThisExpr.getInstance());
+                return new MemberVarRefExpr(name.getNameAsString(),ThisExpr.getInstance());
             }
         }
         //If there was no match with names till this point ,we can assume nameExpr given is name of class

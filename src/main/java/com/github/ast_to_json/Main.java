@@ -1,7 +1,7 @@
 package com.github.ast_to_json;
 
 
-import JsonASTDeserialiser.JsonAstDeserialiser;
+import JsonASTDeserialiser.JsonAstSerialiser;
 import com.github.javaparser.*;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.symbolsolver.JavaSymbolSolver;
@@ -38,7 +38,7 @@ public class Main {
         conf.setSymbolResolver(symbolSolver);
 
         JavaParser parser = new JavaParser(conf);
-        JsonAstDeserialiser deserialiser = new JsonAstDeserialiser(sourceFile);
+        JsonAstSerialiser deserialiser = new JsonAstSerialiser(sourceFile);
         Path path = Paths.get(sourceFile.getPath());
 
         String jsonFormat="";
