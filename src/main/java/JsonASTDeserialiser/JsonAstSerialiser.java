@@ -323,9 +323,10 @@ public class JsonAstSerialiser extends GenericVisitorAdapter<JsonNode,JsonNode> 
         if (n.getInitialization().size() == 0) {
             forStmtJson.put("init", NullNode.getInstance());
         }else {
-            //In this phase,we take only first expression,ForStm in init part has Statement,so if there is assigntExpr,
-            //or UnaryExpr,whatewer we need to create virtual ExpressionStmt,if there is Declaration expression visit method
-            //of this node returns proper format-either DefStmt or LocalVarDefStmt
+            //check if first expression is VariableDeclarationExpression,if it s true,there will be no other expressions
+            //in list ,so visit this node ,if it s not VariableDeclarationExpression, use logic for createting BinOpExpresseions
+            //with comma
+
             Expression initExpr = n.getInitialization().get(0);
 
             if (initExpr instanceof VariableDeclarationExpr) {
@@ -333,7 +334,8 @@ public class JsonAstSerialiser extends GenericVisitorAdapter<JsonNode,JsonNode> 
 
             } else {
                 //If expression inside is not VariableDeclarationExpr,create virtual ExpressionStmt
-                forStmtJson.set("init",this.synteticNodeCreator.createExpressionStmt((ObjectNode) initExpr.accept(this,null)));
+                forStmtJson.set("init",this.synteticNodeCreator.createExpressionStmt(
+                        this.synteticNodeCreator.createBinOpExpr(n.getInitialization(),",",0,this)));
 
 
 
