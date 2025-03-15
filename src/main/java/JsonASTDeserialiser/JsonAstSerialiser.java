@@ -1,5 +1,9 @@
 package JsonASTDeserialiser;
 
+import Referencies.ClassRefExpr;
+import Referencies.LocalVarRefExpr;
+import Referencies.MemberVarRefExpr;
+import Referencies.ParamVarRefExpr;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -27,9 +31,9 @@ public class JsonAstSerialiser extends GenericVisitorAdapter<JsonNode,JsonNode> 
     private ObjectMapper objectMapper = new ObjectMapper();
     private ReferenceTypeResolver referenceTypeResolver;
 
-    private Map<String,ObjectNode> localVars = new HashMap<>();
-    private Map<String,ObjectNode> parameters = new HashMap<>();
-    private Map<String,ObjectNode> attributes = new HashMap<>();
+    private Map<String,VariableDeclarator> localVars = new HashMap<>();
+    private Map<String,Parameter> parameters = new HashMap<>();
+    private Map<String,VariableDeclarator> attributes = new HashMap<>();
 
     private NodeCreator synteticNodeCreator = new NodeCreator(this.objectMapper);
     private BlockStmt lasBlockStmtJson = null;
@@ -78,7 +82,8 @@ public class JsonAstSerialiser extends GenericVisitorAdapter<JsonNode,JsonNode> 
             methodJson.put("body",n.getBody().isPresent() ? this.visit(n.getBody().get(),null) :
                                                                         NullNode.getInstance());
             methodJson.put("virtual",n.isFinal() ? "no" : "yes");
-
+            this.parameters.clear();
+            this.localVars.clear();
             return methodJson;
     }
 
@@ -122,6 +127,18 @@ public class JsonAstSerialiser extends GenericVisitorAdapter<JsonNode,JsonNode> 
         lambdaExprJson.put("params",params);
         n.getParameters().forEach(param -> params.add(this.visit(param,null)));
         lambdaExprJson.put("body",n.getBody().accept(this,null));
+
+        //remove parameters of lambda from hashmap,they are no more accessible at this point
+        n.getParameters().forEach(parameter -> {
+            this.parameters.remove(parameter.getNameAsString());
+        });
+
+        //remove variables declared inside lambda from local vars,they are no more accessible,so cannot be
+        //referenced
+        n.getBody().findAll(VariableDeclarator.class).forEach(variableDeclarator -> {
+            localVars.remove(variableDeclarator.getNameAsString());
+        });
+
         return lambdaExprJson;
     }
 
@@ -434,6 +451,8 @@ public class JsonAstSerialiser extends GenericVisitorAdapter<JsonNode,JsonNode> 
         constructorDefStmtJson.put("access",access == AccessSpecifier.NONE ? "internal" :
                                                               access.asString());
 
+        parameters.clear();
+        localVars.clear();
         return constructorDefStmtJson;
     }
 
@@ -522,6 +541,7 @@ public class JsonAstSerialiser extends GenericVisitorAdapter<JsonNode,JsonNode> 
 
                 //add completed representation of LocalVarDefStm into array
                 definitions.add(localVarDefStmtJson);
+                this.localVars.put(variable.getNameAsString(),variable);
 
             });
             return defStmtJson;
@@ -531,7 +551,7 @@ public class JsonAstSerialiser extends GenericVisitorAdapter<JsonNode,JsonNode> 
         localVarDefStmtJson.put("node","LocalVarDefStmt");
         //add to localVarDefStmtJson properties
         this.visit(variables.get(0),localVarDefStmtJson);
-
+        this.localVars.put(variables.get(0).getNameAsString(),variables.get(0));
         return localVarDefStmtJson;
     }
 
@@ -555,6 +575,7 @@ public class JsonAstSerialiser extends GenericVisitorAdapter<JsonNode,JsonNode> 
         varDefStmtJson.put("initializer", initialzer.isPresent()
                                         ? initialzer.get().accept(this,null) :
                                         NullNode.getInstance());
+
 
         //returns input output parameter
         return arg;
@@ -600,7 +621,7 @@ public class JsonAstSerialiser extends GenericVisitorAdapter<JsonNode,JsonNode> 
                 parameterNodeJson.put("type",n.getType().accept(this,null));
                 parameterNodeJson.put("initializer",NullNode.getInstance());
 
-
+        parameters.put(n.getNameAsString(),n);
         return parameterNodeJson;
 
     }
@@ -681,7 +702,9 @@ public class JsonAstSerialiser extends GenericVisitorAdapter<JsonNode,JsonNode> 
                     memberVarDef.put("access", access == AccessSpecifier.NONE ?
                             "internal" : access.asString());
                     this.visit(variableDeclarator,memberVarDef);
-                    attributes.add(memberVarDef);});
+                    attributes.add(memberVarDef);
+                    this.attributes.put(variableDeclarator.getNameAsString(),variableDeclarator);
+                });
 
                 });
 
@@ -931,7 +954,21 @@ public class JsonAstSerialiser extends GenericVisitorAdapter<JsonNode,JsonNode> 
 
     @Override
     public JsonNode visit(NameExpr n, JsonNode arg) {
-        return this.referenceTypeResolver.determineReferenceType(n).toJson(this.objectMapper);
+        String name = n.getNameAsString();
+        if(parameters.containsKey(name)) return new ParamVarRefExpr(name).toJson(this.objectMapper);
+        if(localVars.containsKey(name)) return new LocalVarRefExpr(name).toJson(this.objectMapper);
+        if(attributes.containsKey(name)) {
+            FieldDeclaration field = (FieldDeclaration) attributes.get(name).getParentNode().get();
+            if(field.isStatic()){
+                ClassOrInterfaceDeclaration classDeclaration = (ClassOrInterfaceDeclaration) field.getParentNode().get();
+                String nameofClass = classDeclaration.getNameAsString();
+                return new MemberVarRefExpr(name,new ClassRefExpr(nameofClass)).toJson(this.objectMapper);
+            }else{
+                return new MemberVarRefExpr(name, Referencies.ThisExpr.getInstance()).toJson(this.objectMapper);
+            }
+        }
+
+        return new ClassRefExpr(name).toJson(this.objectMapper);
 
     }
 
