@@ -25,6 +25,7 @@ import com.github.javaparser.resolution.types.ResolvedType;
 import com.github.javaparser.utils.SourceRoot;
 import com.github.javaparser.utils.ProjectRoot;
 
+import java.sql.SQLOutput;
 import java.util.*;
 
 
@@ -641,15 +642,18 @@ public class JsonAstSerialiser extends GenericVisitorAdapter<JsonNode,JsonNode> 
                                     parent.get() instanceof ClassOrInterfaceDeclaration)) {
 
             classTypeJson.put("node", "UserType");
-            classTypeJson.put("name",n.getNameAsString());
+            classTypeJson.put("name",this.synteticNodeCreator.createFullName(n));
+
+
         }else {
 
             classTypeJson.put("node", "IndirectionType");
 
             ObjectNode inderectTypeJson = this.objectMapper.createObjectNode();
             inderectTypeJson.put("node", "UserType");
-            inderectTypeJson.put("name", n.getNameAsString());
+            inderectTypeJson.put("name", this.synteticNodeCreator.createFullName(n));
             classTypeJson.put("indirect", inderectTypeJson);
+
         }
         return classTypeJson;
     }
@@ -678,7 +682,7 @@ public class JsonAstSerialiser extends GenericVisitorAdapter<JsonNode,JsonNode> 
             classOrInterfDeclJson.put("bases",bases);
 
             n.getExtendedTypes().forEach(type -> {
-                bases.add(type.getNameAsString());
+                bases.add(this.visit(type,null).get("name"));
             });
 
 
@@ -736,12 +740,13 @@ public class JsonAstSerialiser extends GenericVisitorAdapter<JsonNode,JsonNode> 
             ArrayNode interfaces = this.objectMapper.createArrayNode();
             classOrInterfDeclJson.set("interfaces",interfaces);
             n.getImplementedTypes().forEach(type ->
-                    interfaces.add(type.getNameAsString()));
+                    interfaces.add(this.visit(type,null).get("name")));
 
             ArrayNode bases = this.objectMapper.createArrayNode();
             classOrInterfDeclJson.set("bases",bases);
-            n.getExtendedTypes().forEach(type ->
-                    bases.add(type.getNameAsString()));
+            n.getExtendedTypes().forEach(extendedType -> {
+                bases.add(this.visit(extendedType,null).get("name"));
+            });
 
             this.attributes.clear();
             return classOrInterfDeclJson;

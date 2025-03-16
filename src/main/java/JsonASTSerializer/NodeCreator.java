@@ -6,8 +6,10 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.stmt.Statement;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
+import com.github.javaparser.ast.type.Type;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 //Class for creating syntetic JSON representation of nodes,which don't exist in JavaParser AST,but are required
 //in ASTFRI
@@ -18,6 +20,32 @@ public class NodeCreator {
         this.mapper = mapper;
     }
 
+    public String createFullName(ClassOrInterfaceType type){
+        StringBuilder builder = new StringBuilder();
+
+
+        builder.append(type.getName().asString());
+
+        var typeArguments = type.getTypeArguments();
+        if (typeArguments.isEmpty() || typeArguments.get().size() == 0) return builder.toString();
+
+
+        AtomicInteger i= new AtomicInteger(0);
+        builder.append("<");
+        typeArguments.get().forEach(extendedType ->{
+            builder.append(createFullName((ClassOrInterfaceType) extendedType));
+            if(i.get() == typeArguments.get().size() - 1) {
+                builder.append(">");
+
+            }else{
+                builder.append(",");
+            }
+            i.incrementAndGet();
+        });
+
+        return builder.toString();
+
+    }
 
     public ObjectNode createCompoundStmt(List<Statement> statements,JsonAstSerialiser serialiser){
         ObjectNode compoundStmt = this.mapper.createObjectNode();
