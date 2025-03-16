@@ -35,7 +35,7 @@ import java.util.*;
 
 public class JsonAstSerialiser extends GenericVisitorAdapter<JsonNode,JsonNode> {
     private ObjectMapper objectMapper = new ObjectMapper();
-    private ReferenceTypeResolver referenceTypeResolver;
+
 
     private Map<String,VariableDeclarator> localVars = new HashMap<>();
     private Map<String,Parameter> parameters = new HashMap<>();
@@ -44,10 +44,7 @@ public class JsonAstSerialiser extends GenericVisitorAdapter<JsonNode,JsonNode> 
     private NodeCreator synteticNodeCreator = new NodeCreator(this.objectMapper);
 
 
-    public JsonAstSerialiser(File file) {
-        this.referenceTypeResolver = new ReferenceTypeResolver(this.objectMapper,file);
 
-    }
 
 
     @Override

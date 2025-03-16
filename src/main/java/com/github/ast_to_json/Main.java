@@ -39,7 +39,7 @@ public class Main {
 
         StaticJavaParser.setConfiguration(conf);
 
-        JsonAstSerialiser serialiser = new JsonAstSerialiser(sourceFile);
+        JsonAstSerialiser serialiser = new JsonAstSerialiser();
         Path path = Paths.get(sourceFile.getPath());
 
         String jsonFormat="";
