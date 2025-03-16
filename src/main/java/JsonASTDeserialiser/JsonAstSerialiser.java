@@ -1002,17 +1002,20 @@ public class JsonAstSerialiser extends GenericVisitorAdapter<JsonNode,JsonNode> 
         if(n.getScope().isPresent()){
                 methodCallExprJson.put("owner", n.getScope().get().accept(this,null));
 
-        }else{
-            //if there is no scope, method owner will be either ThisExpr or ClassRefExpr-it s static method
-            // - implemented in ReferenceTypeResolver-method resolveMethodOwner
-            var methodOwner = this.referenceTypeResolver.resolveMethodOwner(n);
-            methodCallExprJson.put("owner",methodOwner.isPresent()?
-                                                        methodOwner.get().toJson(this.objectMapper) :
-                                                         null);
+        }else {
+            try {
+                var resolveMethod = n.resolve();
+                String className = resolveMethod.getClassName();
+                methodCallExprJson.put("owner", resolveMethod.isStatic() ?
+                        new ClassRefExpr(className).toJson(this.objectMapper) :
+                        Referencies.ThisExpr.getInstance().toJson(this.objectMapper));
+
+
+            } catch (Exception e) {
+                methodCallExprJson.set("owner",null);
+            }
 
         }
-
-
         ArrayNode arguments = objectMapper.createArrayNode();
         n.getArguments().forEach(e -> arguments.add(e.accept(this,null)));
 
