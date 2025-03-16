@@ -743,6 +743,7 @@ public class JsonAstSerialiser extends GenericVisitorAdapter<JsonNode,JsonNode> 
             n.getExtendedTypes().forEach(type ->
                     bases.add(type.getNameAsString()));
 
+            this.attributes.clear();
             return classOrInterfDeclJson;
         }
     }
