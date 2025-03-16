@@ -1,4 +1,4 @@
-package JsonASTDeserialiser;
+package JsonASTSerializer;
 
 import Referencies.ClassRefExpr;
 import Referencies.LocalVarRefExpr;
@@ -10,7 +10,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.node.*;
-import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.type.*;
 import com.github.javaparser.ast.AccessSpecifier;
 import com.github.javaparser.ast.CompilationUnit;
@@ -22,14 +21,10 @@ import com.github.javaparser.ast.nodeTypes.NodeWithVariables;
 import com.github.javaparser.ast.stmt.*;
 
 import com.github.javaparser.ast.visitor.GenericVisitorAdapter;
-import com.github.javaparser.resolution.TypeSolver;
 import com.github.javaparser.resolution.types.ResolvedType;
-import com.github.javaparser.symbolsolver.JavaSymbolSolver;
-import com.github.javaparser.symbolsolver.javaparsermodel.JavaParserFacade;
 import com.github.javaparser.utils.SourceRoot;
 import com.github.javaparser.utils.ProjectRoot;
 
-import java.io.File;
 import java.util.*;
 
 
@@ -203,10 +198,7 @@ public class JsonAstSerialiser extends GenericVisitorAdapter<JsonNode,JsonNode> 
         return switchStmtJson;
     }
 
-    /*
-    Switch entry is gona take as expression only first expression,because ASTFRI doesnt implement
-    possibility do declare more expressions in case,maybe it s gonna change
-     */
+
 
     @Override
     public JsonNode visit(SwitchEntry n, JsonNode arg) {
@@ -226,16 +218,8 @@ public class JsonAstSerialiser extends GenericVisitorAdapter<JsonNode,JsonNode> 
         //BlockStmt node in order to serialize it easily int ASTFRI-there CaseStmt counts only with one
         //statement
         if( n.getStatements().size() > 1){
-            ObjectNode compoundStmt = this.objectMapper.createObjectNode();
-            compoundStmt.put("node","CompoundStmt");
+            switchEntryJson.set("body",this.synteticNodeCreator.createCompoundStmt(n.getStatements(),this));
 
-            ArrayNode statements = this.objectMapper.createArrayNode();
-            compoundStmt.set("statements",statements);
-
-            switchEntryJson.set("body",compoundStmt);
-            n.getStatements().forEach(statement -> {
-               statements.add(statement.accept(this,null));
-            });
         }else {
             var stmt = n.getStatements().getFirst();
             if (stmt.isPresent()){

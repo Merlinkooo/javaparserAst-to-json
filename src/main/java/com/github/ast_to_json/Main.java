@@ -1,7 +1,7 @@
 package com.github.ast_to_json;
 
 
-import JsonASTDeserialiser.JsonAstSerialiser;
+import JsonASTSerializer.JsonAstSerialiser;
 import com.github.javaparser.*;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.symbolsolver.JavaSymbolSolver;
