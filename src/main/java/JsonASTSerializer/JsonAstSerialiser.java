@@ -642,7 +642,11 @@ public class JsonAstSerialiser extends GenericVisitorAdapter<JsonNode,JsonNode> 
                                     parent.get() instanceof ClassOrInterfaceDeclaration)) {
 
             classTypeJson.put("node", "UserType");
-            classTypeJson.put("name",this.synteticNodeCreator.createFullName(n));
+            try {
+                classTypeJson.put("name", n.resolve().describe());
+            }catch (Exception e){
+                classTypeJson.put("name", n.getNameWithScope());
+            }
 
 
         }else {
@@ -651,11 +655,24 @@ public class JsonAstSerialiser extends GenericVisitorAdapter<JsonNode,JsonNode> 
 
             ObjectNode inderectTypeJson = this.objectMapper.createObjectNode();
             inderectTypeJson.put("node", "UserType");
-            inderectTypeJson.put("name", this.synteticNodeCreator.createFullName(n));
+            try {
+                inderectTypeJson.put("name", n.resolve().describe());
+            } catch (Exception e) {
+                inderectTypeJson.put("name", n.getNameWithScope());
+            }
             classTypeJson.put("indirect", inderectTypeJson);
 
         }
         return classTypeJson;
+    }
+
+    public JsonNode visit(Type type,JsonNode arg){
+        return type.accept(this,null);
+    }
+
+    @Override
+    public JsonNode visit(ArrayType n, JsonNode arg) {
+        return this.synteticNodeCreator.createIndirectionTypeFromArrayType(n,this,n.getArrayLevel());
     }
 
     @Override
@@ -664,8 +681,12 @@ public class JsonAstSerialiser extends GenericVisitorAdapter<JsonNode,JsonNode> 
         //check if this node is interface-different logic apply for class and interface
         if (n.isInterface()){
             classOrInterfDeclJson.put("node","InterfaceDefStmt");
-            classOrInterfDeclJson.put("name", n.getNameAsString());
 
+            try {
+                classOrInterfDeclJson.put("name", n.resolve().getName());
+            } catch (Exception e) {
+                classOrInterfDeclJson.put("name", n.getNameAsString());
+            }
             ArrayNode methods = this.objectMapper.createArrayNode();
             classOrInterfDeclJson.put("methods", methods);
             n.getMethods().forEach(m -> methods.add(visit(m, null)));
@@ -690,7 +711,11 @@ public class JsonAstSerialiser extends GenericVisitorAdapter<JsonNode,JsonNode> 
             return classOrInterfDeclJson;
         }else {
             classOrInterfDeclJson.put("node","ClassDefStmt");
-            classOrInterfDeclJson.put("name", n.getNameAsString());
+            try {
+                classOrInterfDeclJson.put("name", n.resolve().getName());
+            } catch (Exception e) {
+                classOrInterfDeclJson.put("name", n.getNameAsString());
+            }
         /*
         ArrayNode modifiers = objectMapper.createArrayNode();
         classOrInterfDeclJson.put("modifiers",modifiers);

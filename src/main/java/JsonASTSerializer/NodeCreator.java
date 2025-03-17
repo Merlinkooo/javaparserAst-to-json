@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.stmt.Statement;
+import com.github.javaparser.ast.type.ArrayType;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.Type;
 
@@ -18,6 +19,23 @@ public class NodeCreator {
 
     public NodeCreator(ObjectMapper mapper) {
         this.mapper = mapper;
+    }
+
+    public ObjectNode createIndirectionTypeFromArrayType(ArrayType arrayType,JsonAstSerialiser serialiser,int level){
+        ObjectNode indirectionTypeJson = mapper.createObjectNode();
+        if(level == 1){
+            indirectionTypeJson.put("node","IndirectionType");
+            indirectionTypeJson.set("indirect",(ObjectNode)serialiser.visit(arrayType.getElementType(),null));
+            return indirectionTypeJson;
+        }
+
+
+
+        indirectionTypeJson.put("node","IndirectionType");
+        indirectionTypeJson.put("indirect",
+                this.createIndirectionTypeFromArrayType(arrayType,serialiser,--level));
+
+        return indirectionTypeJson;
     }
 
     public String createFullName(ClassOrInterfaceType type){
