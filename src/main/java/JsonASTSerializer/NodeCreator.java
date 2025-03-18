@@ -41,8 +41,11 @@ public class NodeCreator {
     public String createFullName(ClassOrInterfaceType type){
         StringBuilder builder = new StringBuilder();
 
-
-        builder.append(type.getName().asString());
+        try {
+            builder.append(type.resolve().describe());
+        } catch (Exception e) {
+            builder.append(type.getName().asString());
+        }
 
         var typeArguments = type.getTypeArguments();
         if (typeArguments.isEmpty() || typeArguments.get().size() == 0) return builder.toString();

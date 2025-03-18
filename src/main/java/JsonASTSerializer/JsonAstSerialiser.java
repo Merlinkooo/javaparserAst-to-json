@@ -645,7 +645,8 @@ public class JsonAstSerialiser extends GenericVisitorAdapter<JsonNode,JsonNode> 
             try {
                 classTypeJson.put("name", n.resolve().describe());
             }catch (Exception e){
-                classTypeJson.put("name", n.getNameWithScope());
+
+                classTypeJson.put("name", this.synteticNodeCreator.createFullName(n));
             }
 
 
@@ -658,7 +659,7 @@ public class JsonAstSerialiser extends GenericVisitorAdapter<JsonNode,JsonNode> 
             try {
                 inderectTypeJson.put("name", n.resolve().describe());
             } catch (Exception e) {
-                inderectTypeJson.put("name", n.getNameWithScope());
+                inderectTypeJson.put("name", synteticNodeCreator.createFullName(n));
             }
             classTypeJson.put("indirect", inderectTypeJson);
 
@@ -683,7 +684,7 @@ public class JsonAstSerialiser extends GenericVisitorAdapter<JsonNode,JsonNode> 
             classOrInterfDeclJson.put("node","InterfaceDefStmt");
 
             try {
-                classOrInterfDeclJson.put("name", n.resolve().getName());
+                classOrInterfDeclJson.put("name", n.resolve().getQualifiedName());
             } catch (Exception e) {
                 classOrInterfDeclJson.put("name", n.getNameAsString());
             }
@@ -712,7 +713,7 @@ public class JsonAstSerialiser extends GenericVisitorAdapter<JsonNode,JsonNode> 
         }else {
             classOrInterfDeclJson.put("node","ClassDefStmt");
             try {
-                classOrInterfDeclJson.put("name", n.resolve().getName());
+                classOrInterfDeclJson.put("name", n.resolve().getQualifiedName());
             } catch (Exception e) {
                 classOrInterfDeclJson.put("name", n.getNameAsString());
             }
