@@ -43,6 +43,7 @@ public class NodeCreator {
 
         try {
             builder.append(type.resolve().describe());
+            return builder.toString();
         } catch (Exception e) {
             builder.append(type.getName().asString());
         }
