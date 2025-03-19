@@ -25,7 +25,9 @@ public class NodeCreator {
         ObjectNode indirectionTypeJson = mapper.createObjectNode();
         if(level == 1){
             indirectionTypeJson.put("node","IndirectionType");
-            indirectionTypeJson.set("indirect",(ObjectNode)serialiser.visit(arrayType.getElementType(),null));
+            indirectionTypeJson.set("indirect",arrayType.getElementType() instanceof ClassOrInterfaceType ?
+                    serialiser.visit(arrayType.getElementType(),null).get("indirect"):
+                    serialiser.visit(arrayType.getElementType(),null));
             return indirectionTypeJson;
         }
 

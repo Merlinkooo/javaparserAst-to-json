@@ -792,6 +792,7 @@ public class JsonAstSerialiser extends GenericVisitorAdapter<JsonNode,JsonNode> 
     @Override
     public JsonNode visit(ArrayCreationExpr n, JsonNode arg) {
         return this.synteticNodeCreator.createUnknownExpression();
+
     }
     //TODO
     //ArrayAccessExpr expression is not implemented yet in ASTFRI,so implementation of this method how it actually is
