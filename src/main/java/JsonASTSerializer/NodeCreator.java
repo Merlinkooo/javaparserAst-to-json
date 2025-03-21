@@ -3,6 +3,8 @@ package JsonASTSerializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.github.javaparser.ast.ArrayCreationLevel;
+import com.github.javaparser.ast.expr.ArrayCreationExpr;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.stmt.Statement;
 import com.github.javaparser.ast.type.ArrayType;
@@ -98,20 +100,66 @@ public class NodeCreator {
     }
 
     public ObjectNode createBinOpExpr(List<Expression> expressions, String operator,
-                                      int indexOfExpression, JsonAstSerialiser visitor){
-        if (expressions.size() == 0) throw new RuntimeException("Empty list of expressions");
+                                      int indexOfExpression, JsonAstSerialiser visitor) {
+        if (expressions.size() == 0) return null;
         if (indexOfExpression >= expressions.size()) throw new IndexOutOfBoundsException();
-        if (indexOfExpression == expressions.size() - 1) return (ObjectNode) expressions.get(indexOfExpression).accept(visitor,null);
+        if (indexOfExpression == expressions.size() - 1)
+            return (ObjectNode) expressions.get(indexOfExpression).accept(visitor, null);
         ObjectNode binOpExpr = this.mapper.createObjectNode();
-        binOpExpr.put("node","BinOpExpr");
+        binOpExpr.put("node", "BinOpExpr");
 
 
-        binOpExpr.set("left",expressions.get(indexOfExpression).accept(visitor,null));
+        binOpExpr.set("left", expressions.get(indexOfExpression).accept(visitor, null));
 
-        binOpExpr.put("operator",operator);
-        binOpExpr.put("right",this.createBinOpExpr(expressions,operator,
-                ++indexOfExpression,visitor));
+        binOpExpr.put("operator", operator);
+        binOpExpr.put("right", this.createBinOpExpr(expressions, operator,
+                ++indexOfExpression, visitor));
 
         return binOpExpr;
     }
+    ObjectNode createNewExpr(ObjectNode constructorCallExprJson){
+        ObjectNode newExpr = this.mapper.createObjectNode();
+        newExpr.put("node","NewExpr");
+        newExpr.set("init",constructorCallExprJson);
+        return newExpr;
+    }
+
+        public ObjectNode createNewExprFromArrayCreationExpr(ArrayCreationExpr expr,JsonAstSerialiser serialiser){
+
+            //ArrayCreationLevel in case int[4][5] : 1. = 4; 2.=5
+            int dimensions = expr.getLevels().size();
+
+            ObjectNode lastIndirectionType;
+            if (expr.getElementType() instanceof ClassOrInterfaceType){
+                 lastIndirectionType = this.createIndirectionType((ObjectNode) expr.getElementType().accept(serialiser, null).get("indirect"));
+            }else {
+                 lastIndirectionType = this.createIndirectionType((ObjectNode) expr.getElementType().accept(serialiser, null));
+            }
+
+            ObjectNode lastNewExpr = this.createNewExpr(
+                    this.createConstructorCallExpr(lastIndirectionType,mapper.createArrayNode()));
+
+            for (int i = 0; i <dimensions - 1 ; i++) {
+                lastIndirectionType = this.createIndirectionType(lastIndirectionType);
+                lastNewExpr =  createNewExpr(this.createConstructorCallExpr(lastIndirectionType,
+                        mapper.createArrayNode().add(lastNewExpr)));
+            }
+            return lastNewExpr;
+    }
+
+        public ObjectNode createIndirectionType(ObjectNode nodeType){
+            ObjectNode indirectionTypeJson = this.mapper.createObjectNode();
+            indirectionTypeJson.put("node","IndirectionType");
+            indirectionTypeJson.set("indirect",nodeType);
+            return indirectionTypeJson;
+        }
+
+        public ObjectNode createConstructorCallExpr(ObjectNode typeNode,ArrayNode arguments){
+            ObjectNode constructorCallExpr = this.mapper.createObjectNode();
+            constructorCallExpr.put("node","ConstructorCallExpr");
+            constructorCallExpr.set("type",typeNode);
+            constructorCallExpr.set("arguments",arguments);
+            return constructorCallExpr;
+        }
+
 }

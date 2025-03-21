@@ -411,8 +411,12 @@ public class JsonAstSerialiser extends GenericVisitorAdapter<JsonNode,JsonNode> 
             if (n.isThis()) {
                 baseInitStmtJson.put("base",classDec.getNameAsString());
             //or it is with super,we dont consider any other option
-            }else{
-                baseInitStmtJson.put("base", classDec.getExtendedTypes().get(0).getNameAsString());
+            }else {
+                try {
+                    baseInitStmtJson.put("base", classDec.getExtendedTypes().get(0).resolve().describe());
+                } catch (Exception e) {
+                    baseInitStmtJson.put("base", classDec.getExtendedTypes().get(0).getNameAsString());
+                }
             }
 
         }
@@ -791,11 +795,12 @@ public class JsonAstSerialiser extends GenericVisitorAdapter<JsonNode,JsonNode> 
 
     @Override
     public JsonNode visit(ArrayCreationExpr n, JsonNode arg) {
-        return this.synteticNodeCreator.createUnknownExpression();
-
+        return this.synteticNodeCreator.createNewExprFromArrayCreationExpr(n,this);
     }
+
+
     //TODO
-    //ArrayAccessExpr expression is not implemented yet in ASTFRI,so implementation of this method how it actually is
+    //ArrayAccessExpr expression/ operator [] is not implemented yet in ASTFRI,so implementation of this method how it actually is
     //temporary
     @Override
     public JsonNode visit(ArrayAccessExpr n, JsonNode arg) {
