@@ -125,7 +125,7 @@ public class JsonAstSerialiser extends GenericVisitorAdapter<JsonNode,JsonNode> 
         ObjectNode lambdaExprJson = objectMapper.createObjectNode();
         lambdaExprJson.put("node","LambdaExpr");
         ArrayNode params = objectMapper.createArrayNode();
-        lambdaExprJson.put("params",params);
+        lambdaExprJson.put("parameters",params);
 
         n.getParameters().forEach(param -> {
             if (param.getType().isUnknownType()){
