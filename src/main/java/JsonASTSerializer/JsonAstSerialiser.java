@@ -167,7 +167,7 @@ public class JsonAstSerialiser extends GenericVisitorAdapter<JsonNode,JsonNode> 
 
     //We are only interested in access modifiers in this stage
     //so if there is no modifier ,it means it s default modifier-and equivalent of default is internal in ASTFRI
-    @Override
+    /*@Override
     public JsonNode visit(Modifier n, JsonNode arg) {
         String modifStr = n.getKeyword().asString();
 
@@ -178,7 +178,7 @@ public class JsonAstSerialiser extends GenericVisitorAdapter<JsonNode,JsonNode> 
         return TextNode.valueOf("internal");
 
     }
-
+*/
     @Override
     public JsonNode visit(CharLiteralExpr n, JsonNode arg) {
         ObjectNode charLiteralExprJson = objectMapper.createObjectNode();
