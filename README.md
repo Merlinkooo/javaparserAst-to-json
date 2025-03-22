@@ -1,5 +1,5 @@
-# Library for deserialization Javaparser AST into JSON format
-This project was created for deserialization Javaparser AST to JSON format in order to serialize output JSON file to [ASTFRI AST](https://github.com/kifriosse/astfri) 
+# Library for serialization Javaparser AST into JSON format
+This project was created for serialization Javaparser AST to JSON format in order to deserialize output JSON file to [ASTFRI AST](https://github.com/kifriosse/astfri) 
 ## Dependencies:
 This projects uses two open source libraries:
 
