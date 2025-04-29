@@ -3,13 +3,11 @@ package JsonASTSerializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.github.javaparser.ast.ArrayCreationLevel;
 import com.github.javaparser.ast.expr.ArrayCreationExpr;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.stmt.Statement;
 import com.github.javaparser.ast.type.ArrayType;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
-import com.github.javaparser.ast.type.Type;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -23,7 +21,7 @@ public class NodeCreator {
         this.mapper = mapper;
     }
 
-    public ObjectNode createIndirectionTypeFromArrayType(ArrayType arrayType,JsonAstSerialiser serialiser,int level){
+    public ObjectNode createIndirectionTypeFromArrayType(ArrayType arrayType, JsonAstSerializer serialiser, int level){
         ObjectNode indirectionTypeJson = mapper.createObjectNode();
         if(level == 1){
             indirectionTypeJson.put("node","IndirectionType");
@@ -73,7 +71,7 @@ public class NodeCreator {
 
     }
 
-    public ObjectNode createCompoundStmt(List<Statement> statements,JsonAstSerialiser serialiser){
+    public ObjectNode createCompoundStmt(List<Statement> statements, JsonAstSerializer serialiser){
         ObjectNode compoundStmt = this.mapper.createObjectNode();
         compoundStmt.put("node","CompoundStmt");
 
@@ -100,7 +98,7 @@ public class NodeCreator {
     }
 
     public ObjectNode createBinOpExpr(List<Expression> expressions, String operator,
-                                      int indexOfExpression, JsonAstSerialiser visitor) {
+                                      int indexOfExpression, JsonAstSerializer visitor) {
         if (expressions.size() == 0) return null;
         if (indexOfExpression >= expressions.size()) throw new IndexOutOfBoundsException();
         if (indexOfExpression == expressions.size() - 1)
@@ -124,7 +122,7 @@ public class NodeCreator {
         return newExpr;
     }
 
-        public ObjectNode createNewExprFromArrayCreationExpr(ArrayCreationExpr expr,JsonAstSerialiser serialiser){
+        public ObjectNode createNewExprFromArrayCreationExpr(ArrayCreationExpr expr, JsonAstSerializer serialiser){
 
             //ArrayCreationLevel in case int[4][5] : 1. = 4; 2.=5
             int dimensions = expr.getLevels().size();

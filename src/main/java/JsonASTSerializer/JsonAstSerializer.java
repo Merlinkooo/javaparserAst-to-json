@@ -13,7 +13,6 @@ import com.fasterxml.jackson.databind.node.*;
 import com.github.javaparser.ast.type.*;
 import com.github.javaparser.ast.AccessSpecifier;
 import com.github.javaparser.ast.CompilationUnit;
-import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.expr.*;
@@ -25,11 +24,10 @@ import com.github.javaparser.resolution.types.ResolvedType;
 import com.github.javaparser.utils.SourceRoot;
 import com.github.javaparser.utils.ProjectRoot;
 
-import java.sql.SQLOutput;
 import java.util.*;
 
 
-public class JsonAstSerialiser extends GenericVisitorAdapter<JsonNode,JsonNode> {
+public class JsonAstSerializer extends GenericVisitorAdapter<JsonNode,JsonNode> {
     private ObjectMapper objectMapper = new ObjectMapper();
 
 
@@ -515,6 +513,16 @@ public class JsonAstSerialiser extends GenericVisitorAdapter<JsonNode,JsonNode> 
                 statements.add(statement.accept(this, null));
             }
 
+        });
+        n.getStatements().forEach(statement -> {
+            if (statement instanceof ExpressionStmt){
+                var expressionStmt = (ExpressionStmt)statement;
+                if(expressionStmt.getExpression() instanceof VariableDeclarationExpr) {
+                    var variableDeclarator = (VariableDeclarationExpr) expressionStmt.getExpression();
+                    variableDeclarator.getVariables().forEach(variable ->
+                            this.localVars.remove(variable.getNameAsString()));
+                }
+            }
         });
 
         return blockStatementJson;
